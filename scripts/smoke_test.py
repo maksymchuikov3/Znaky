@@ -45,6 +45,8 @@ def tap_text(text):
                 adb("shell", "input", "tap", str((x1 + x2) // 2), str((y1 + y2) // 2))
                 time.sleep(2)
                 return
+        # Not visible yet: the target may be further down a scrolling screen.
+        adb("shell", "input", "swipe", "540", "1500", "540", "900", "300", check=False)
         time.sleep(1)
     raise SystemExit(f"'{text}' not found on screen")
 
