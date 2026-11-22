@@ -52,7 +52,7 @@ jobs:
             echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
             echo "ZNAKY_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
           else
-            echo "::warning::No ZNAKY_KEYSTORE_BASE64 secret. The APK is signed with the debug key."
+            echo "No ZNAKY_KEYSTORE_BASE64 secret: signing with the shared app/debug.keystore."
           fi
 
       - name: Unit tests
@@ -76,5 +76,9 @@ jobs:
           name: Знаки ${{ steps.ver.outputs.name }}
           target_commitish: ${{ github.sha }}
           generate_release_notes: true
-          prerelease: ${{ startsWith(steps.ver.outputs.name, '0.') }}
+          body: |
+            Завантажте `znaky-${{ steps.ver.outputs.name }}.apk` нижче і відкрийте його на телефоні.
+            Нова версія встановлюється поверх попередньої, дані зберігаються.
+          prerelease: false
+          make_latest: true
           files: znaky-${{ steps.ver.outputs.name }}.apk

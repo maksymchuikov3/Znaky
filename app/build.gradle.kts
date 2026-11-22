@@ -6,13 +6,21 @@ plugins {
 }
 
 // Release signing comes from CI secrets (see .github/workflows/release.yml).
-// Without them the release APK is signed with the debug key so it still installs.
+// Without them the release APK is signed with the shared key in app/debug.keystore.
+// That key is committed on purpose: every build has the same signature, so a new
+// APK installs over the previous one as an update instead of failing.
 val releaseKeystore = System.getenv("ZNAKY_KEYSTORE_FILE")?.let(::file)?.takeIf { it.exists() }
 
 android {
     namespace = "com.znaky.app"
 
     signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         if (releaseKeystore != null) {
             create("release") {
                 storeFile = releaseKeystore

@@ -25,7 +25,8 @@ Every push to `main` builds a release APK and publishes it on the
 publishes that exact version, and "Run workflow" on the Actions tab does it by hand.
 Workflow: `.github/workflows/release.yml`.
 
-Signing uses these repository secrets: `ZNAKY_KEYSTORE_BASE64` (base64 of the `.jks`),
-`ZNAKY_KEYSTORE_PASSWORD`, `ZNAKY_KEY_ALIAS` and `ZNAKY_KEY_PASSWORD`. Until they are set,
-the APK is signed with the debug key. It installs fine, but you can't upgrade from it to a
-properly signed build without uninstalling first.
+Signing: release APKs are signed with the shared key committed at `app/debug.keystore`,
+so every new APK installs over the previous one as an update. `versionCode` grows with
+every run, so Android never refuses an update as a downgrade. For Google Play, add a real
+key later via the secrets `ZNAKY_KEYSTORE_BASE64`, `ZNAKY_KEYSTORE_PASSWORD`,
+`ZNAKY_KEY_ALIAS` and `ZNAKY_KEY_PASSWORD`. Switching keys means uninstalling once.
