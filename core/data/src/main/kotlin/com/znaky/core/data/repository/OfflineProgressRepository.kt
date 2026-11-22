@@ -53,4 +53,7 @@ class OfflineProgressRepository @Inject constructor(
         val since = sinceEpochDay * 86_400_000L - offset
         return dao.observeActiveDays(since, offset).map { it.toSet() }
     }
+
+    override fun observeAnswerCountSince(epochDay: Long): Flow<Int> =
+        dao.observeAnswerCount(epochDay * 86_400_000L - TimeZone.getDefault().rawOffset.toLong())
 }

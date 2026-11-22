@@ -3,6 +3,7 @@ package com.znaky.feature.stats
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.znaky.core.domain.progress.streakLength
 import com.znaky.core.domain.readiness.ReadinessCalculator
 import com.znaky.core.domain.repository.ProgressRepository
 import com.znaky.core.domain.repository.QuestionRepository
@@ -54,10 +55,7 @@ class StatsViewModel @Inject constructor(
             val day = monday.plusDays(i.toLong())
             WeekDay(dayLabels[i], day.toEpochDay() in activeDays, day == today)
         }
-        var streak = 0
-        var day = today.toEpochDay()
-        if (day !in activeDays) day -= 1 // today is not over yet
-        while (day in activeDays) { streak++; day-- }
+        val streak = streakLength(activeDays, today.toEpochDay())
 
         val titles = topics.associate { it.id to it.title }
         val weak = topicProgress

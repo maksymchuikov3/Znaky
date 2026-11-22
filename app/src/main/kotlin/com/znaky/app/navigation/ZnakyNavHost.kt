@@ -16,10 +16,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.Quiz
-import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material.icons.rounded.TaskAlt
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -41,6 +41,10 @@ import androidx.navigation.navOptions
 import com.znaky.core.designsystem.theme.ZnakyTheme
 import com.znaky.core.designsystem.theme.ZnakyType
 import com.znaky.feature.exam.ExamIntroRoute
+import com.znaky.feature.home.LearnHubRoute
+import com.znaky.feature.home.TrainingRoute
+import com.znaky.feature.home.hubScreens
+import com.znaky.feature.learn.SignSprintRoute
 import com.znaky.feature.exam.ExamRoute
 import com.znaky.feature.exam.examScreens
 import com.znaky.feature.exam.navigateToExam
@@ -64,8 +68,8 @@ import com.znaky.feature.stats.statsScreen
 
 private enum class Tab(val label: String, val icon: ImageVector, val route: Any, val matches: (NavDestination) -> Boolean) {
     HOME("Головна", Icons.Rounded.Home, HomeRoute, { it.hasRoute<HomeRoute>() }),
-    TESTS("Тести", Icons.Rounded.Quiz, TopicsRoute, { it.hasRoute<TopicsRoute>() }),
-    EXAM("Іспит", Icons.Rounded.Timer, ExamIntroRoute, { it.hasRoute<ExamIntroRoute>() }),
+    LEARN("Вчити", Icons.AutoMirrored.Rounded.MenuBook, LearnHubRoute, { it.hasRoute<LearnHubRoute>() }),
+    TRAINING("Тренування", Icons.Rounded.TaskAlt, TrainingRoute, { it.hasRoute<TrainingRoute>() }),
     PROGRESS("Прогрес", Icons.Rounded.BarChart, StatsRoute, { it.hasRoute<StatsRoute>() }),
 }
 
@@ -88,21 +92,26 @@ fun ZnakyApp() {
     val currentTab = entry?.destination.tab()
     Column(Modifier.fillMaxSize().background(ZnakyTheme.colors.background)) {
         NavHost(navController = navController, startDestination = HomeRoute, modifier = Modifier.weight(1f)) {
-            homeScreen(
-                onOpenSection = { section ->
-                    when (section) {
-                        HomeSection.TESTS -> navController.openTab(Tab.TESTS)
-                        HomeSection.EXAM -> navController.navigateToExam()
-                        HomeSection.PROGRESS -> navController.openTab(Tab.PROGRESS)
-                        HomeSection.SIGNS -> navController.navigate(SignsRoute)
-                        HomeSection.RULES -> navController.navigate(RulesRoute)
-                        HomeSection.MARKINGS -> navController.navigate(MarkingsRoute)
-                        HomeSection.EXPLAIN -> navController.navigate(ExplainRoute)
-                        HomeSection.CAR -> navController.navigate(CarHubRoute)
-                    }
-                },
-                onOpenReview = { navController.navigateToReview() },
-            )
+            val openSection: (HomeSection) -> Unit = { section ->
+                when (section) {
+                    HomeSection.EXAM -> navController.navigateToExam()
+                    HomeSection.EXAM_INTRO -> navController.navigate(ExamIntroRoute)
+                    HomeSection.TOPICS -> navController.navigate(TopicsRoute) { launchSingleTop = true }
+                    HomeSection.PROGRESS -> navController.openTab(Tab.PROGRESS)
+                    HomeSection.LEARN -> navController.openTab(Tab.LEARN)
+                    HomeSection.TRAINING -> navController.openTab(Tab.TRAINING)
+                    HomeSection.SIGNS -> navController.navigate(SignsRoute)
+                    HomeSection.RULES -> navController.navigate(RulesRoute)
+                    HomeSection.MARKINGS -> navController.navigate(MarkingsRoute)
+                    HomeSection.EXPLAIN -> navController.navigate(ExplainRoute)
+                    HomeSection.CAR -> navController.navigate(CarHubRoute)
+                    HomeSection.SIGN_GAME -> navController.navigate(SignSprintRoute)
+                }
+            }
+            val openTopic: (String) -> Unit = { navController.navigateToTopic(it) }
+            val openReview: () -> Unit = { navController.navigateToReview() }
+            homeScreen(onOpenSection = openSection, onOpenTopic = openTopic, onOpenReview = openReview)
+            hubScreens(onOpenSection = openSection, onOpenTopic = openTopic, onOpenReview = openReview)
             practiceScreens(navController, onBack = { navController.popBackStack() })
             examScreens(
                 onStart = { navController.navigateToExam() },

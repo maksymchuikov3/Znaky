@@ -20,4 +20,7 @@ interface ProgressRepository {
 
     /** Local epoch days (since 1970-01-01) on which the user answered at least one question. */
     fun observeActiveDays(sinceEpochDay: Long): Flow<Set<Long>>
+
+    /** Number of answers given since local midnight of [epochDay] (the daily goal counter). */
+    fun observeAnswerCountSince(epochDay: Long): Flow<Int>
 }

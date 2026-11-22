@@ -21,7 +21,7 @@ fun NavController.navigateToTopic(topicId: String) = navigate(PracticeRoute(topi
 
 fun NavGraphBuilder.practiceScreens(navController: NavController, onBack: () -> Unit) {
     composable<TopicsRoute> {
-        TopicsScreen(onTopicClick = { navController.navigateToTopic(it) })
+        TopicsScreen(onTopicClick = { navController.navigateToTopic(it) }, onBack = onBack)
     }
     composable<PracticeRoute> {
         PracticeScreen(onBack = onBack)
