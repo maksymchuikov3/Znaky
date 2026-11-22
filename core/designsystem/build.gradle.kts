@@ -1,0 +1,9 @@
+plugins {
+    alias(libs.plugins.znaky.android.library)
+    alias(libs.plugins.znaky.android.compose)
+}
+
+dependencies {
+    api(projects.core.model)
+    api(libs.androidx.compose.material.icons.extended)
+}
