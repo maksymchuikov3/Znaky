@@ -17,6 +17,6 @@ data object ExamRoute
 fun NavController.navigateToExam(navOptions: NavOptions? = null) = navigate(ExamRoute, navOptions)
 
 fun NavGraphBuilder.examScreens(onStart: () -> Unit, onExit: () -> Unit, onRetry: () -> Unit) {
-    composable<ExamIntroRoute> { ExamIntroScreen(onStart = onStart) }
+    composable<ExamIntroRoute> { ExamIntroScreen(onStart = onStart, onBack = onExit) }
     composable<ExamRoute> { ExamScreen(onExit = onExit, onRetry = onRetry) }
 }

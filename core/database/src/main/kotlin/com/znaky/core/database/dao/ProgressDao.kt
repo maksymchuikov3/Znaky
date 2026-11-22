@@ -37,6 +37,9 @@ interface ProgressDao {
     )
     fun observeActiveDays(sinceMillis: Long, offsetMillis: Long): Flow<List<Long>>
 
+    @Query("SELECT COUNT(*) FROM answer_log WHERE answeredAtMillis >= :sinceMillis")
+    fun observeAnswerCount(sinceMillis: Long): Flow<Int>
+
     @Insert
     suspend fun insertExamResult(result: ExamResultEntity)
 

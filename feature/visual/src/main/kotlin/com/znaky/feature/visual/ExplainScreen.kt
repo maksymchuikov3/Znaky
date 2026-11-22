@@ -105,14 +105,14 @@ internal fun ExplainScreen(onBack: () -> Unit, onOpenPriority: () -> Unit, onOpe
                     "Хто першим",
                     subtitle = "Розставте черговість проїзду",
                     onClick = onOpenPriority,
-                    leading = { IconTile(Icons.Rounded.Traffic, c.purple) },
+                    leading = { IconTile(Icons.Rounded.Traffic, c.purpleTint, tint = c.purple) },
                 )
                 ListRow(
                     "Регулювальник",
                     subtitle = "Що означають сигнали руками",
                     showDivider = true,
                     onClick = onOpenOfficer,
-                    leading = { IconTile(Icons.Rounded.Groups, c.teal) },
+                    leading = { IconTile(Icons.Rounded.Groups, c.tealTint, tint = c.teal) },
                 )
             }
         }

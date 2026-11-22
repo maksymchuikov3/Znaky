@@ -26,6 +26,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.znaky.core.designsystem.component.GroupedList
 import com.znaky.core.designsystem.component.LargeTitle
+import com.znaky.core.designsystem.component.TopBar
 import com.znaky.core.designsystem.component.ListRow
 import com.znaky.core.designsystem.component.LoadingBox
 import com.znaky.core.designsystem.component.ProgressRing
@@ -42,7 +43,7 @@ internal fun ExamBlock.title() = when (this) {
 }
 
 @Composable
-internal fun TopicsScreen(onTopicClick: (String) -> Unit, viewModel: TopicsViewModel = hiltViewModel()) {
+internal fun TopicsScreen(onTopicClick: (String) -> Unit, onBack: () -> Unit, viewModel: TopicsViewModel = hiltViewModel()) {
     val items by viewModel.topics.collectAsStateWithLifecycle()
     val list = items ?: return LoadingBox()
     var query by rememberSaveable { mutableStateOf("") }
@@ -57,8 +58,9 @@ internal fun TopicsScreen(onTopicClick: (String) -> Unit, viewModel: TopicsViewM
         Modifier.fillMaxSize().background(c.background).statusBarsPadding(),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
+        item(key = "back") { TopBar(onBack = onBack) }
         item(key = "title") {
-            LargeTitle("Тести", Modifier.padding(top = 16.dp), subtitle = "${list.size} тем · ${list.sumOf { it.topic.questionCount }} питань")
+            LargeTitle("Тести за темами", subtitle = "${list.size} тем · ${list.sumOf { it.topic.questionCount }} питань")
         }
         item(key = "search") { SearchField(query, { query = it }, "Тема або номер розділу") }
         groups.forEach { (block, topics) ->

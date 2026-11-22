@@ -29,20 +29,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.znaky.core.designsystem.component.LargeTitle
+import com.znaky.core.designsystem.component.TopBar
 import com.znaky.core.designsystem.component.ZButton
 import com.znaky.core.designsystem.component.ZCard
 import com.znaky.core.designsystem.theme.ZnakyTheme
 import com.znaky.core.designsystem.theme.ZnakyType
 
 @Composable
-internal fun ExamIntroScreen(onStart: () -> Unit) {
+internal fun ExamIntroScreen(onStart: () -> Unit, onBack: () -> Unit) {
     val c = ZnakyTheme.colors
     Column(Modifier.fillMaxSize().background(c.background).statusBarsPadding()) {
+        TopBar(onBack = onBack)
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            LargeTitle("Пробний іспит", Modifier.padding(top = 16.dp), subtitle = "Як у сервісному центрі МВС: ті самі умови й підрахунок помилок.")
+            LargeTitle("Пробний іспит", subtitle = "Як у сервісному центрі МВС: ті самі умови й підрахунок помилок.")
             ZCard(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Fact(Icons.Rounded.Quiz, c.primary, c.primaryTint, "20 питань", "10 з правил, по 4 з безпеки й будови авто, 2 з домедичної допомоги")
