@@ -6,4 +6,5 @@ plugins {
 dependencies {
     api(projects.core.model)
     api(libs.androidx.compose.material.icons.extended)
+    implementation(libs.kotlinx.coroutines.android)
 }

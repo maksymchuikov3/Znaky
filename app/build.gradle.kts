@@ -43,15 +43,23 @@ android {
             applicationIdSuffix = ".debug"
         }
         release {
-            // Shrinking stays off until R8 keep rules are checked on a device.
-            isMinifyEnabled = false
+            // R8 shrinks and optimises code and resources (APK several times smaller, faster start).
+            // CI launches the minified APK on an emulator before any release (scripts/smoke_test.py).
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 
     packaging {
-        resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        resources.excludes += listOf("/META-INF/{AL2.0,LGPL2.1}", "/META-INF/*.version", "DebugProbesKt.bin", "kotlin-tooling-metadata.json")
+    }
+
+    dependenciesInfo {
+        // Not needed outside Google Play; keeps the APK smaller.
+        includeInApk = false
+        includeInBundle = false
     }
 }
 
