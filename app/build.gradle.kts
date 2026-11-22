@@ -71,6 +71,8 @@ dependencies {
     implementation(projects.feature.exam)
     implementation(projects.feature.stats)
     implementation(projects.feature.learn)
+    implementation(projects.feature.visual)
+    implementation(projects.feature.car)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

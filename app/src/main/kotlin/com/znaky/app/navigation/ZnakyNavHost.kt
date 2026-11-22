@@ -51,6 +51,10 @@ import com.znaky.feature.learn.MarkingsRoute
 import com.znaky.feature.learn.RulesRoute
 import com.znaky.feature.learn.SignsRoute
 import com.znaky.feature.learn.learnScreens
+import com.znaky.feature.car.CarHubRoute
+import com.znaky.feature.car.carScreens
+import com.znaky.feature.visual.ExplainRoute
+import com.znaky.feature.visual.visualScreens
 import com.znaky.feature.practice.TopicsRoute
 import com.znaky.feature.practice.navigateToReview
 import com.znaky.feature.practice.navigateToTopic
@@ -93,7 +97,8 @@ fun ZnakyApp() {
                         HomeSection.SIGNS -> navController.navigate(SignsRoute)
                         HomeSection.RULES -> navController.navigate(RulesRoute)
                         HomeSection.MARKINGS -> navController.navigate(MarkingsRoute)
-                        else -> navController.navigate(ComingSoonRoute(sectionTitle(section)))
+                        HomeSection.EXPLAIN -> navController.navigate(ExplainRoute)
+                        HomeSection.CAR -> navController.navigate(CarHubRoute)
                     }
                 },
                 onOpenReview = { navController.navigateToReview() },
@@ -107,23 +112,13 @@ fun ZnakyApp() {
             )
             statsScreen(onTrainTopic = { navController.navigateToTopic(it) })
             learnScreens(navController, onTrainTopic = { navController.navigateToTopic(it) })
-            comingSoonScreen(onBack = { navController.popBackStack() })
+            visualScreens(navController)
+            carScreens(navController, onTrainTopic = { navController.navigateToTopic(it) })
         }
         AnimatedVisibility(currentTab != null, enter = fadeIn(), exit = fadeOut()) {
             TabBar(currentTab) { navController.openTab(it) }
         }
     }
-}
-
-private fun sectionTitle(section: HomeSection) = when (section) {
-    HomeSection.RULES -> "Правила"
-    HomeSection.SIGNS -> "Знаки"
-    HomeSection.MARKINGS -> "Розмітка"
-    HomeSection.EXPLAIN -> "Пояснення"
-    HomeSection.CAR -> "3D-машина"
-    HomeSection.TESTS -> "Тести"
-    HomeSection.EXAM -> "Іспит"
-    HomeSection.PROGRESS -> "Прогрес"
 }
 
 @Composable

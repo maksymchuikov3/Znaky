@@ -43,6 +43,8 @@ fun ZButton(
     kind: ButtonKind = ButtonKind.Primary,
     icon: ImageVector? = null,
     enabled: Boolean = true,
+    /** Spoken label for icon-only buttons (empty [text]). */
+    contentDescription: String? = null,
 ) {
     val c = ZnakyTheme.colors
     val (bg, fg) = when (kind) {
@@ -58,15 +60,15 @@ fun ZButton(
             .clip(RoundedCornerShape(18.dp))
             .background(if (enabled) bg else c.surfaceMuted)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .padding(horizontal = 18.dp),
+            .padding(horizontal = if (text.isEmpty()) 0.dp else 18.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
         if (icon != null) {
-            Icon(icon, contentDescription = null, tint = if (enabled) fg else c.textTertiary, modifier = Modifier.size(20.dp))
-            HSpacer(8.dp)
+            Icon(icon, contentDescription = contentDescription, tint = if (enabled) fg else c.textTertiary, modifier = Modifier.size(20.dp))
+            if (text.isNotEmpty()) HSpacer(8.dp)
         }
-        Text(text, style = ZnakyType.button, color = if (enabled) fg else c.textTertiary, textAlign = TextAlign.Center)
+        if (text.isNotEmpty()) Text(text, style = ZnakyType.button, color = if (enabled) fg else c.textTertiary, textAlign = TextAlign.Center)
     }
 }
 

@@ -62,7 +62,17 @@ adb("logcat", "-c", check=False)
 adb("shell", "am", "start", "-W", "-n", f"{PACKAGE}/com.znaky.app.MainActivity")
 time.sleep(6)
 check("launch")
-for step in sys.argv[3:] or ["Тести", "Прогрес", "Іспит", "Почати іспит"]:
-    tap_text(step)
-    check(f"tap {step}")
+DEFAULT_STEPS = [
+    "Знаки", "BACK",
+    "Пояснення", "BACK",
+    "3D-машина", "Рентген", "Схема", "Електромобіль", "Гальма і ABS", "Далі", "Далі", "BACK", "BACK",
+    "Тести", "Прогрес", "Іспит", "Почати іспит",
+]
+for step in sys.argv[3:] or DEFAULT_STEPS:
+    if step == "BACK":
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        time.sleep(2)
+    else:
+        tap_text(step)
+    check(step)
 print("Smoke test passed")
