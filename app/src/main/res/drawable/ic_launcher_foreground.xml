@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder icon: an amber warning-sign triangle. Replace with the final brand icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,28 L80,74 L28,74 Z" />
+    <path
+        android:fillColor="#FFB94A"
+        android:pathData="M54,36 L73,70 L35,70 Z" />
+    <path
+        android:fillColor="#0B1B2B"
+        android:pathData="M52,46 L56,46 L55.5,60 L52.5,60 Z M52,63 L56,63 L56,67 L52,67 Z" />
+</vector>

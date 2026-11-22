@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_title">Знаки</string>
+    <string name="home_readiness">Готовність до іспиту</string>
+    <string name="home_readiness_score">%1$d%%</string>
+    <string name="home_level_too_early">Ще рано: пройдіть щонайменше 3 пробні іспити</string>
+    <string name="home_level_getting_there">Рухаєтеся в правильному напрямку</string>
+    <string name="home_level_almost">Майже готові</string>
+    <string name="home_level_ready">Готові до іспиту в сервісному центрі</string>
+    <string name="home_exam">Пробний іспит</string>
+    <string name="home_exam_subtitle">20 питань · 20 хвилин · до 2 помилок</string>
+    <string name="home_topics">Тести за темами</string>
+    <string name="home_review">Повторення</string>
+    <string name="home_review_subtitle">До повторення сьогодні: %1$d</string>
+    <string name="home_stats">Статистика</string>
+    <string name="home_disclaimer">Незалежний навчальний застосунок. Не є офіційним продуктом МВС чи ГСЦ МВС.</string>
+    <string name="home_content_error">Не вдалося завантажити питання</string>
+</resources>

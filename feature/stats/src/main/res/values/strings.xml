@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stats_title">Статистика</string>
+    <string name="stats_back">Назад</string>
+    <string name="stats_readiness">Готовність: %1$d%%</string>
+    <string name="stats_coverage">Вивчено питань: %1$d%%</string>
+    <string name="stats_exams_taken">Пробних іспитів: %1$d</string>
+    <string name="stats_recent_exams">Останні іспити</string>
+    <string name="stats_exam_row">%1$s · %2$d/%3$d</string>
+    <string name="stats_passed">складено</string>
+    <string name="stats_failed">не складено</string>
+    <string name="stats_no_exams">Ви ще не проходили пробний іспит.</string>
+</resources>
