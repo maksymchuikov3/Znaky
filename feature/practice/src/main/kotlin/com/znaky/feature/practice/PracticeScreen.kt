@@ -77,10 +77,8 @@ internal fun PracticeScreen(onBack: () -> Unit, viewModel: PracticeViewModel = h
                         // Room for the feedback sheet so it never covers the last answer.
                         Spacer(Modifier.height(if (state.revealed) 260.dp else 24.dp))
                     }
-                    AnimatedVisibility(
+                    FeedbackOverlay(
                         visible = state.revealed,
-                        enter = slideInVertically { it },
-                        exit = slideOutVertically { it },
                         modifier = Modifier.align(Alignment.BottomCenter),
                     ) {
                         FeedbackSheet(question, state.selectedAnswerId, isLast = state.index + 1 >= total, onNext = viewModel::next)
@@ -89,6 +87,17 @@ internal fun PracticeScreen(onBack: () -> Unit, viewModel: PracticeViewModel = h
             }
         }
     }
+}
+
+/** Kept outside the Column so the plain (not ColumnScope) AnimatedVisibility is used. */
+@Composable
+private fun FeedbackOverlay(visible: Boolean, modifier: Modifier, content: @Composable () -> Unit) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = slideInVertically { it },
+        exit = slideOutVertically { it },
+        modifier = modifier,
+    ) { content() }
 }
 
 @Composable

@@ -47,6 +47,10 @@ import com.znaky.feature.exam.navigateToExam
 import com.znaky.feature.home.HomeRoute
 import com.znaky.feature.home.HomeSection
 import com.znaky.feature.home.homeScreen
+import com.znaky.feature.learn.MarkingsRoute
+import com.znaky.feature.learn.RulesRoute
+import com.znaky.feature.learn.SignsRoute
+import com.znaky.feature.learn.learnScreens
 import com.znaky.feature.practice.TopicsRoute
 import com.znaky.feature.practice.navigateToReview
 import com.znaky.feature.practice.navigateToTopic
@@ -86,6 +90,9 @@ fun ZnakyApp() {
                         HomeSection.TESTS -> navController.openTab(Tab.TESTS)
                         HomeSection.EXAM -> navController.navigateToExam()
                         HomeSection.PROGRESS -> navController.openTab(Tab.PROGRESS)
+                        HomeSection.SIGNS -> navController.navigate(SignsRoute)
+                        HomeSection.RULES -> navController.navigate(RulesRoute)
+                        HomeSection.MARKINGS -> navController.navigate(MarkingsRoute)
                         else -> navController.navigate(ComingSoonRoute(sectionTitle(section)))
                     }
                 },
@@ -99,6 +106,7 @@ fun ZnakyApp() {
                 onRetry = { navController.navigateToExam(navOptions { popUpTo(ExamRoute) { inclusive = true } }) },
             )
             statsScreen(onTrainTopic = { navController.navigateToTopic(it) })
+            learnScreens(navController, onTrainTopic = { navController.navigateToTopic(it) })
             comingSoonScreen(onBack = { navController.popBackStack() })
         }
         AnimatedVisibility(currentTab != null, enter = fadeIn(), exit = fadeOut()) {
