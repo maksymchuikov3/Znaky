@@ -43,13 +43,13 @@ interface ProgressDao {
         """
         SELECT q.topicId AS topicId,
                COUNT(q.id) AS totalQuestions,
-               SUM(CASE WHEN last.isCorrect IS NOT NULL THEN 1 ELSE 0 END) AS answeredQuestions,
-               SUM(CASE WHEN last.isCorrect = 1 THEN 1 ELSE 0 END) AS correctlyAnsweredQuestions
+               SUM(CASE WHEN latest.isCorrect IS NOT NULL THEN 1 ELSE 0 END) AS answeredQuestions,
+               SUM(CASE WHEN latest.isCorrect = 1 THEN 1 ELSE 0 END) AS correctlyAnsweredQuestions
         FROM questions q
         LEFT JOIN (
             SELECT a.questionId, a.isCorrect FROM answer_log a
             WHERE a.id = (SELECT MAX(b.id) FROM answer_log b WHERE b.questionId = a.questionId)
-        ) last ON last.questionId = q.id
+        ) latest ON latest.questionId = q.id
         GROUP BY q.topicId
         """,
     )
