@@ -5,13 +5,29 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// Release signing comes from CI secrets (see .github/workflows/release.yml).
+// Without them the release APK is signed with the debug key so it still installs.
+val releaseKeystore = System.getenv("ZNAKY_KEYSTORE_FILE")?.let(::file)?.takeIf { it.exists() }
+
 android {
     namespace = "com.znaky.app"
 
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = releaseKeystore
+                storePassword = System.getenv("ZNAKY_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ZNAKY_KEY_ALIAS")
+                keyPassword = System.getenv("ZNAKY_KEY_PASSWORD")
+            }
+        }
+    }
+
     defaultConfig {
         applicationId = "com.znaky.app"
-        versionCode = 1
-        versionName = "0.1.0"
+        // CI passes -PversionCode / -PversionName for every release build.
+        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 1
+        versionName = (findProperty("versionName") as String?) ?: "0.1.0"
     }
 
     buildTypes {
@@ -19,10 +35,10 @@ android {
             applicationIdSuffix = ".debug"
         }
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // Shrinking stays off until R8 keep rules are checked on a device.
+            isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Release signing is configured in CI from secrets; see docs/architecture.md.
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 
