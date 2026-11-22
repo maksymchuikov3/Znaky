@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.znaky.app.navigation.ZnakyNavHost
+import com.znaky.app.navigation.ZnakyApp
 import com.znaky.core.designsystem.theme.ZnakyTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -15,7 +15,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ZnakyTheme {
-                ZnakyNavHost()
+                ZnakyApp()
             }
         }
     }

@@ -12,6 +12,7 @@ import com.znaky.core.model.TopicProgress
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
+import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -46,4 +47,10 @@ class OfflineProgressRepository @Inject constructor(
         dao.observeTopicProgress().map { rows -> rows.map { it.toModel() } }
 
     override fun observeDueForReview(): Flow<List<String>> = dao.observeDue(today())
+
+    override fun observeActiveDays(sinceEpochDay: Long): Flow<Set<Long>> {
+        val offset = TimeZone.getDefault().rawOffset.toLong()
+        val since = sinceEpochDay * 86_400_000L - offset
+        return dao.observeActiveDays(since, offset).map { it.toSet() }
+    }
 }

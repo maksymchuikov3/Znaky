@@ -17,4 +17,7 @@ interface ProgressRepository {
 
     /** Ids of questions due for review today, most urgent first. */
     fun observeDueForReview(): Flow<List<String>>
+
+    /** Local epoch days (since 1970-01-01) on which the user answered at least one question. */
+    fun observeActiveDays(sinceEpochDay: Long): Flow<Set<Long>>
 }

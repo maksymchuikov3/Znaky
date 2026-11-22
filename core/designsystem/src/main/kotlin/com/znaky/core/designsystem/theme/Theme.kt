@@ -1,46 +1,42 @@
 package com.znaky.core.designsystem.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 
-private val LightColors = lightColorScheme(
-    primary = Asphalt40,
-    onPrimary = androidx.compose.ui.graphics.Color.White,
-    primaryContainer = Asphalt90,
-    onPrimaryContainer = Asphalt10,
-    secondary = Amber40,
-    secondaryContainer = Amber90,
-)
-
-private val DarkColors = darkColorScheme(
-    primary = Asphalt80,
-    onPrimary = Asphalt10,
-    primaryContainer = Asphalt30,
-    onPrimaryContainer = Asphalt90,
-    secondary = Amber80,
-    secondaryContainer = Amber40,
-)
+private fun ZnakyColors.toMaterial() = if (isDark) {
+    darkColorScheme(
+        primary = link, onPrimary = background, primaryContainer = primaryTint, onPrimaryContainer = onPrimaryTint,
+        secondary = accent, background = background, onBackground = textPrimary, surface = surface,
+        onSurface = textPrimary, onSurfaceVariant = textSecondary, surfaceVariant = surfaceMuted,
+        outline = separator, outlineVariant = separator, error = error, errorContainer = errorTint,
+    )
+} else {
+    lightColorScheme(
+        primary = primary, onPrimary = onPrimary, primaryContainer = primaryTint, onPrimaryContainer = onPrimaryTint,
+        secondary = accent, background = background, onBackground = textPrimary, surface = surface,
+        onSurface = textPrimary, onSurfaceVariant = textSecondary, surfaceVariant = surfaceMuted,
+        outline = separator, outlineVariant = separator, error = error, errorContainer = errorTint,
+    )
+}
 
 @Composable
 fun ZnakyTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val colors = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColors
-        else -> LightColors
+    val colors = if (darkTheme) DarkZnakyColors else LightZnakyColors
+    CompositionLocalProvider(LocalZnakyColors provides colors) {
+        MaterialTheme(colorScheme = colors.toMaterial(), typography = ZnakyTypography, content = content)
     }
-    MaterialTheme(colorScheme = colors, content = content)
+}
+
+/** Short access to the design tokens: `ZnakyTheme.colors.surface`. */
+object ZnakyTheme {
+    val colors: ZnakyColors
+        @Composable @ReadOnlyComposable get() = LocalZnakyColors.current
 }

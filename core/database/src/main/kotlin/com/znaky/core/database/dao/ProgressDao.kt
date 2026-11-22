@@ -30,6 +30,13 @@ interface ProgressDao {
     @Query("SELECT questionId FROM review_cards WHERE dueEpochDay <= :todayEpochDay ORDER BY box, dueEpochDay")
     fun observeDue(todayEpochDay: Long): Flow<List<String>>
 
+    /** Distinct days with answers; [offsetMillis] shifts UTC to the user's time zone. */
+    @Query(
+        "SELECT DISTINCT (answeredAtMillis + :offsetMillis) / 86400000 FROM answer_log " +
+            "WHERE answeredAtMillis >= :sinceMillis",
+    )
+    fun observeActiveDays(sinceMillis: Long, offsetMillis: Long): Flow<List<Long>>
+
     @Insert
     suspend fun insertExamResult(result: ExamResultEntity)
 
