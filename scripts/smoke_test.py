@@ -29,8 +29,15 @@ def crash_log():
     return log if PACKAGE in log else ""
 
 
+def screen_size():
+    out = adb("shell", "wm", "size", check=False)
+    m = re.findall(r"(\d+)x(\d+)", out)
+    return tuple(map(int, m[-1])) if m else (1080, 1920)
+
+
 def tap_text(text):
     """Taps the first on-screen element whose text or description equals `text`."""
+    root = ET.Element("hierarchy")
     for _ in range(10):
         adb("shell", "uiautomator", "dump", "/sdcard/ui.xml", check=False)
         xml = adb("shell", "cat", "/sdcard/ui.xml", check=False)
@@ -46,9 +53,11 @@ def tap_text(text):
                 time.sleep(2)
                 return
         # Not visible yet: the target may be further down a scrolling screen.
-        adb("shell", "input", "swipe", "540", "1500", "540", "900", "300", check=False)
+        w, h = screen_size()
+        adb("shell", "input", "swipe", str(w // 2), str(h * 3 // 4), str(w // 2), str(h * 2 // 5), "400", check=False)
         time.sleep(1)
-    raise SystemExit(f"'{text}' not found on screen")
+    seen = [n.get("text") or n.get("content-desc") for n in root.iter("node") if n.get("text") or n.get("content-desc")]
+    raise SystemExit(f"'{text}' not found on screen. Visible: {seen}")
 
 
 def check(step):
