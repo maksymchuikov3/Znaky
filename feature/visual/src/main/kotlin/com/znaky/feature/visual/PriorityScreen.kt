@@ -41,13 +41,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.znaky.core.art.ArtCanvas
+import com.znaky.core.art.Street
+import com.znaky.core.designsystem.art.drawArt
+import com.znaky.core.designsystem.art.rememberArtCanvas
 import com.znaky.core.designsystem.component.ButtonKind
 import com.znaky.core.designsystem.component.NumberBadge
 import com.znaky.core.designsystem.component.SegmentedControl
@@ -191,14 +193,7 @@ internal fun rememberLoopTime(durationMillis: Int): State<Float> =
 internal fun CrossroadsScene(level: PriorityLevel, tilt: Boolean, dark: Boolean, modifier: Modifier = Modifier) {
     val time = rememberLoopTime(7000)
     TrafficScene(level.cars, "Анімація перехрестя. ${level.hint}.", tilt, dark, time, modifier) {
-        if (level.mainRoadSign) {
-            val p = Offset(size.width * 0.63f, size.height * 0.74f)
-            val r = size.width * 0.035f
-            val path = Path().apply {
-                moveTo(p.x, p.y - r); lineTo(p.x + r, p.y); lineTo(p.x, p.y + r); lineTo(p.x - r, p.y); close()
-            }
-            drawPath(path, Color(0xFFFFD200))
-        }
+        if (level.mainRoadSign) Street.mainRoadSign(this, 64f, 72f)
     }
 }
 
@@ -211,10 +206,11 @@ internal fun TrafficScene(
     dark: Boolean,
     time: State<Float>,
     modifier: Modifier = Modifier,
-    overlay: DrawScope.() -> Unit = {},
+    overlay: ArtCanvas.() -> Unit = {},
 ) {
     val angle by animateFloatAsState(if (tilt) 52f else 0f, tween(600), label = "tilt")
     val sky = if (dark) Color(0xFF14263A) else Color(0xFFCFE3F5)
+    val art = rememberArtCanvas()
     Box(
         modifier
             .fillMaxWidth()
@@ -235,10 +231,12 @@ internal fun TrafficScene(
                     scaleY = 1f + angle / 180f
                 },
         ) {
-            drawCrossroads(dark)
-            overlay()
-            val t = time.value
-            cars.forEach { car -> car.at(t)?.let { (pos, heading) -> drawCar(car, pos, heading) } }
+            drawArt(art) {
+                Street.crossroads(this, dark)
+                overlay()
+                val t = time.value
+                cars.forEach { car -> car.at(t)?.let { (pos, heading) -> drawTrackCar(car, pos, heading) } }
+            }
         }
     }
 }

@@ -43,6 +43,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.znaky.core.art.Car3D
+import com.znaky.core.designsystem.art.drawArt
+import com.znaky.core.designsystem.art.rememberArtCanvas
 import com.znaky.core.designsystem.component.GroupedList
 import com.znaky.core.designsystem.component.LargeTitle
 import com.znaky.core.designsystem.component.LinearBar
@@ -125,7 +128,8 @@ internal fun CarHubScreen(onBack: () -> Unit, onOpenTopic: (id: String, step: In
 @Composable
 private fun Car3DView(kind: CarKind, view: CarView) {
     val c = ZnakyTheme.colors
-    val renderer = remember(kind) { CarRenderer(buildCarMesh(kind)) }
+    val renderer = remember(kind) { Car3D.Renderer(Car3D.build(kind.art)) }
+    val art = rememberArtCanvas()
     val yaw = remember { Animatable(-35f) }
     var dragging by remember { mutableStateOf(false) }
     val pitch by animateFloatAsState(if (view == CarView.SCHEME) -88f else -22f, tween(500), label = "pitch")
@@ -166,8 +170,10 @@ private fun Car3DView(kind: CarKind, view: CarView) {
             },
     ) {
         Canvas(Modifier.fillMaxSize()) {
-            drawCarShadow(pitch)
-            with(renderer) { draw(yaw.value, pitch, view) }
+            drawArt(art) {
+                Car3D.shadow(this, pitch)
+                renderer.draw(this, yaw.value, pitch, view.art)
+            }
         }
         if (view != CarView.SCHEME) {
             Row(

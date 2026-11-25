@@ -28,6 +28,7 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 include(":app")
 
 include(":core:model")
+include(":core:art")
 include(":core:domain")
 include(":core:database")
 include(":core:data")

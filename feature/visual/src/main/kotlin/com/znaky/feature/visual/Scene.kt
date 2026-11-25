@@ -1,13 +1,11 @@
 package com.znaky.feature.visual
 
 import androidx.compose.runtime.Immutable
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.toArgb
+import com.znaky.core.art.ArtCanvas
+import com.znaky.core.art.Street
 import kotlin.math.atan2
 
 internal object SceneColors {
@@ -66,48 +64,9 @@ internal object Lanes {
     const val RIGHTWARD = 0.545f
 }
 
-internal fun DrawScope.drawCrossroads(dark: Boolean, zebra: Boolean = false) {
-    val w = size.width
-    val h = size.height
-    drawRect(if (dark) SceneColors.GrassDark else SceneColors.Grass)
-    drawRect(SceneColors.Road, Offset(0f, h * 0.41f), Size(w, h * 0.18f))
-    drawRect(SceneColors.Road, Offset(w * 0.41f, 0f), Size(w * 0.18f, h))
-    val dash = PathEffect.dashPathEffect(floatArrayOf(w * 0.035f, w * 0.03f))
-    val stroke = w * 0.008f
-    drawLine(SceneColors.Line, Offset(0f, h * 0.5f), Offset(w * 0.40f, h * 0.5f), stroke, pathEffect = dash)
-    drawLine(SceneColors.Line, Offset(w * 0.60f, h * 0.5f), Offset(w, h * 0.5f), stroke, pathEffect = dash)
-    drawLine(SceneColors.Line, Offset(w * 0.5f, 0f), Offset(w * 0.5f, h * 0.40f), stroke, pathEffect = dash)
-    drawLine(SceneColors.Line, Offset(w * 0.5f, h * 0.60f), Offset(w * 0.5f, h), stroke, pathEffect = dash)
-    if (zebra) {
-        var x = w * 0.42f
-        while (x < w * 0.58f) {
-            drawRect(SceneColors.Line, Offset(x, h * 0.62f), Size(w * 0.015f, h * 0.05f))
-            x += w * 0.03f
-        }
-    }
-    // Low blocks at the corners read as buildings once the plane is tilted.
-    val blocks = listOf(Offset(0.06f, 0.07f), Offset(0.66f, 0.08f), Offset(0.08f, 0.67f), Offset(0.67f, 0.68f))
-    val tints = listOf(Color(0xFFF4EDE4), Color(0xFFE9E2F3), Color(0xFFF7F1E8), Color(0xFFE6EEF6))
-    blocks.forEachIndexed { i, b ->
-        val tl = Offset(b.x * w, b.y * h)
-        val s = Size(w * 0.26f, h * 0.24f)
-        drawRoundRect(Color.Black.copy(alpha = 0.12f), tl + Offset(w * 0.012f, h * 0.02f), s, CornerRadius(w * 0.02f))
-        drawRoundRect(if (dark) tints[i].copy(alpha = 0.25f) else tints[i], tl, s, CornerRadius(w * 0.02f))
-    }
-}
+/** ARGB of a Compose colour, for the art module. */
+internal fun Color.argb(): Long = toArgb().toLong() and 0xFFFFFFFFL
 
-/** A car seen from above, centred at [center] (unit coords), rotated by [angle] degrees. */
-internal fun DrawScope.drawCar(track: CarTrack, center: Offset, angle: Float) {
-    val w = size.width
-    val c = Offset(center.x * w, center.y * size.height)
-    val carW = w * 0.062f
-    val carL = w * 0.12f
-    rotate(angle, pivot = c) {
-        drawRoundRect(Color.Black.copy(alpha = 0.25f), Offset(c.x - carW / 2 + 3f, c.y - carL / 2 + 6f), Size(carW, carL), CornerRadius(carW * 0.3f))
-        drawRoundRect(track.body, Offset(c.x - carW / 2, c.y - carL / 2), Size(carW, carL), CornerRadius(carW * 0.3f))
-        drawRoundRect(track.roof, Offset(c.x - carW * 0.36f, c.y - carL * 0.2f), Size(carW * 0.72f, carL * 0.46f), CornerRadius(carW * 0.18f))
-        // Headlights show which way the car is facing.
-        drawCircle(Color(0xFFFFF3B0), carW * 0.12f, Offset(c.x - carW * 0.28f, c.y - carL * 0.44f))
-        drawCircle(Color(0xFFFFF3B0), carW * 0.12f, Offset(c.x + carW * 0.28f, c.y - carL * 0.44f))
-    }
-}
+/** Draws [track]'s car at [center] (unit coordinates) heading [angle] degrees. */
+internal fun ArtCanvas.drawTrackCar(track: CarTrack, center: Offset, angle: Float) =
+    Street.car(this, center.x * 100f, center.y * 100f, angle, track.body.argb())

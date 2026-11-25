@@ -138,7 +138,7 @@ internal fun SignSprintScreen(onBack: () -> Unit) {
                     drawArc(Amber, -90f, 360f * timer.value, false, Offset(w / 2, w / 2), s, style = Stroke(w, cap = StrokeCap.Round))
                 }
                 RoadSign(
-                    round.sign.marks,
+                    round.sign.code,
                     "Знак, який треба назвати",
                     Modifier.size(150.dp).graphicsLayer {
                         val a = appear.value

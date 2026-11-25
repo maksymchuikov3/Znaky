@@ -66,7 +66,7 @@ internal fun SignCardsScreen(group: String, startCode: String?, onBack: () -> Un
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text((groupInfo?.name ?: "").uppercase(), style = ZnakyType.caption, color = c.textTertiary)
-                    RoadSign(sign.marks, "Знак ${sign.code} ${sign.name}", Modifier.size(168.dp))
+                    RoadSign(sign.code, "Знак ${sign.code} ${sign.name}", Modifier.size(168.dp))
                     Text(sign.code, style = ZnakyType.headline, color = c.link)
                     Text(sign.name, style = ZnakyType.title, color = c.textPrimary, textAlign = TextAlign.Center)
                     Text(sign.description, style = ZnakyType.callout, color = c.textSecondary, textAlign = TextAlign.Center)
