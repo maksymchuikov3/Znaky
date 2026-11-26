@@ -38,6 +38,9 @@ for cid, title, intro, default_src, items in CHAPTERS:
         seen.add(key)
         assert text.endswith((".", "»", ")")), term
         src = default_src if cid != "PDR" else "ПДР п. 1.10"
+        if cid in ("PDR", "RULES") and see and see.split()[0] in ("Розділ", "Розділи", "П.", "Знак", "Знаки"):
+            # «Розділ 27» here means a section of the Rules, not a chapter of this book.
+            see = "ПДР, " + see[0].lower() + see[1:]
         rows.append(f"    GlossaryTerm({kstr(term)}, TermCategory.{cid}, {kstr(text)}, {kstr(src)}, {kstr(see)}, {kstr(syn)}),")
         js.append({"term": term, "chapter": cid, "chapterTitle": title, "text": text, "source": src, "see": see, "synonyms": syn})
 
