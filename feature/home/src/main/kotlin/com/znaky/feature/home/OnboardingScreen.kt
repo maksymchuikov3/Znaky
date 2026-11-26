@@ -55,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -63,6 +64,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
@@ -88,8 +90,12 @@ import com.znaky.core.designsystem.theme.ZnakyTheme
 import com.znaky.core.designsystem.theme.ZnakyType
 import com.znaky.core.domain.repository.ExamHorizon
 import com.znaky.core.model.LicenseCategory
-import kotlinx.serialization.Serializable
 import java.time.LocalDate
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.roundToInt
+import kotlin.math.sin
+import kotlinx.serialization.Serializable
 
 /** First launch: welcome, licence category, exam date, daily reminder. */
 @Serializable
@@ -146,7 +152,6 @@ private fun Welcome(onStart: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("RUSHAI · ПІДГОТОВКА ДО ІСПИТУ", style = ZnakyType.caption, color = c.link)
             Text(
                 "Права —\nз першої спроби",
                 style = ZnakyType.largeTitle,
@@ -176,7 +181,11 @@ private fun PageDots(active: Int) {
     }
 }
 
-/** Sky, sun, city, hills and a car driving past a give-way sign; loops forever. */
+/**
+ * Sky, sun, city and hills; a car drives to the right past road signs. The camera follows the car:
+ * the car stays put with a light bounce while lane dashes, signs and speed streaks slide left,
+ * and the wheels turn forward, so the motion always reads nose-first. Loops seamlessly.
+ */
 @Composable
 private fun WelcomeScene(modifier: Modifier) {
     val c = ZnakyTheme.colors
@@ -185,7 +194,7 @@ private fun WelcomeScene(modifier: Modifier) {
     val drive by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(6000, easing = LinearEasing)), label = "drive")
     val glow by transition.animateFloat(0.85f, 1.1f, infiniteRepeatable(tween(1800), RepeatMode.Reverse), label = "sun")
     val art = rememberArtCanvas()
-    Box(modifier.semantics { contentDescription = "Синє авто їде дорогою повз знак «Дати дорогу»" }) {
+    Box(modifier.semantics { contentDescription = "Синє авто їде дорогою вперед повз дорожні знаки" }) {
         Canvas(Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
@@ -216,68 +225,136 @@ private fun WelcomeScene(modifier: Modifier) {
             drawRect(if (dark) Color(0xFF2E353F) else Color(0xFF9AA3AF), Offset(0f, roadTop), Size(w, h - roadTop))
             drawRect(if (dark) Color(0xFF3C4450) else Color(0xFFDDE1E6), Offset(0f, roadTop - 6.dp.toPx()), Size(w, 6.dp.toPx()))
             val laneY = roadTop + (h - roadTop) * 0.45f
+
+            // One loop moves the world left by `travel`; the dash period and the wheel turn are fitted
+            // to it so the loop restarts without a jump.
+            val travel = w + 120.dp.toPx()
+            val dashes = maxOf(1, (travel / 30.dp.toPx()).roundToInt())
+            val period = travel / dashes
+            val shift = travel * drive
             drawLine(
                 Color.White.copy(alpha = 0.85f),
                 Offset(0f, laneY),
                 Offset(w, laneY),
                 3.dp.toPx(),
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(18.dp.toPx(), 12.dp.toPx()), -drive * 30.dp.toPx() * 4),
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(period * 0.6f, period * 0.4f), shift % period),
             )
-            // Sign post.
-            drawLine(Color(0xFF8B95A3), Offset(w * 0.55f, roadTop - 4.dp.toPx()), Offset(w * 0.55f, roadTop - 64.dp.toPx()), 3.dp.toPx())
+            // Two signs, half a loop apart, come in from the right and pass behind the car.
             val signSize = 40.dp.toPx()
-            drawArt(art) {
-                val canvas = this
-                canvas.layer {
-                    translate(w * 0.55f - signSize / 2, roadTop - 64.dp.toPx() - signSize * 0.8f)
-                    scale(signSize / 100f)
-                    RoadSigns.draw(object : ArtCanvas by canvas {
-                        override val width = 100f
-                        override val height = 100f
-                    }, "2.1")
+            listOf("2.1" to 0f, "3.29" to 0.5f).forEach { (id, offset) ->
+                val sx = w + 60.dp.toPx() - travel * ((drive + offset) % 1f)
+                drawLine(Color(0xFF8B95A3), Offset(sx, roadTop - 4.dp.toPx()), Offset(sx, roadTop - 64.dp.toPx()), 3.dp.toPx())
+                drawArt(art) {
+                    val canvas = this
+                    canvas.layer {
+                        translate(sx - signSize / 2, roadTop - 64.dp.toPx() - signSize * 0.8f)
+                        scale(signSize / 100f)
+                        RoadSigns.draw(object : ArtCanvas by canvas {
+                            override val width = 100f
+                            override val height = 100f
+                        }, id)
+                    }
                 }
             }
-            // Car: drives in from the left and leaves on the right.
-            val carW = 120.dp.toPx()
-            val x = -carW + (w + carW * 2) * drive
-            translate(x - carW / 2, laneY - 34.dp.toPx()) { sideCar(carW, Color(0xFF2F62C9)) }
+
+            // The car keeps its place a little left of centre, nose to the right.
+            val carW = minOf(190.dp.toPx(), w * 0.5f)
+            val v = carW / 240f
+            val carX = w * 0.42f - carW / 2
+            val bounce = sin(drive * 2 * PI.toFloat() * 12) * 1.dp.toPx()
+            // Wheel bottoms (y = 91 in the car's box) sit just below the lane line.
+            val carY = laneY + 12.dp.toPx() - 91 * v + bounce
+            // Speed streaks trail behind the rear bumper and fade as they slide away.
+            val streak = Color.White.copy(alpha = if (dark) 0.35f else 0.8f)
+            listOf(Triple(38f, 0f, 1f), Triple(52f, 0.33f, 0.7f), Triple(64f, 0.66f, 0.85f)).forEach { (dy, lag, len) ->
+                val p = (drive * 8 + lag) % 1f
+                val alpha = if (p < 0.3f) p / 0.3f else (1f - p) / 0.7f
+                val x0 = carX + 8 * v - p * 36.dp.toPx()
+                drawLine(
+                    streak.copy(alpha = streak.alpha * alpha),
+                    Offset(x0, carY + dy * v),
+                    Offset(x0 - 26.dp.toPx() * len, carY + dy * v),
+                    3.dp.toPx(),
+                    cap = StrokeCap.Round,
+                )
+            }
+            // A whole number of fifth-turns per loop, so the five spokes line up when it restarts.
+            val turns = (travel / (2 * PI.toFloat() * 17 * v) * 5).roundToInt() / 5f
+            translate(carX, carY) { sideCar(carW, wheelAngle = drive * turns * 360f, groundOffset = -bounce, beam = dark) }
         }
     }
 }
 
-/** A friendly side view of a hatchback, [width] wide and about 0.4 × [width] tall, nose to the right. */
-private fun DrawScope.sideCar(width: Float, body: Color) {
-    val u = width / 100f
-    drawOval(Color.Black.copy(alpha = 0.18f), Offset(6 * u, 36 * u), Size(88 * u, 8 * u))
+/**
+ * A friendly side view of a sedan, [width] wide and about 0.4 × [width] tall, nose to the right:
+ * boot and red tail light on the left, raked windscreen, mirror, long bonnet and headlight on the right.
+ * [wheelAngle] turns the wheels clockwise (forward when driving right); [groundOffset] keeps the
+ * shadow on the road while the body bounces; [beam] lights the road ahead at night.
+ * Drawn in a 240 × 100 box, the same car as in the design mockup.
+ */
+private fun DrawScope.sideCar(width: Float, wheelAngle: Float = 0f, groundOffset: Float = 0f, beam: Boolean = false) {
+    val v = width / 240f
+    fun o(x: Float, y: Float) = Offset(x * v, y * v)
+    if (beam) {
+        drawPath(
+            Path().apply { moveTo(224 * v, 55 * v); lineTo(340 * v, 34 * v); lineTo(340 * v, 84 * v); close() },
+            Brush.horizontalGradient(listOf(Color(0xFFFFE7A0).copy(alpha = 0.6f), Color.Transparent), startX = 224 * v, endX = 340 * v),
+        )
+    }
+    drawOval(Color.Black.copy(alpha = 0.2f), o(14f, 88f + groundOffset / v), Size(216 * v, 12 * v))
     val shell = Path().apply {
-        moveTo(4 * u, 34 * u)
-        lineTo(4 * u, 22 * u)
-        quadraticTo(4 * u, 17 * u, 10 * u, 16 * u)
-        lineTo(26 * u, 14 * u)
-        lineTo(38 * u, 4 * u)
-        quadraticTo(40 * u, 2.5f * u, 44 * u, 2.5f * u)
-        lineTo(66 * u, 2.5f * u)
-        quadraticTo(70 * u, 2.5f * u, 73 * u, 5 * u)
-        lineTo(84 * u, 14 * u)
-        lineTo(92 * u, 16 * u)
-        quadraticTo(97 * u, 17.5f * u, 97 * u, 23 * u)
-        lineTo(97 * u, 34 * u)
+        moveTo(16 * v, 72 * v)
+        lineTo(14 * v, 58 * v)
+        quadraticTo(14 * v, 50 * v, 24 * v, 48 * v)
+        lineTo(56 * v, 45 * v)
+        lineTo(80 * v, 24 * v)
+        quadraticTo(86 * v, 19 * v, 96 * v, 19 * v)
+        lineTo(134 * v, 19 * v)
+        quadraticTo(144 * v, 19 * v, 152 * v, 26 * v)
+        lineTo(172 * v, 44 * v)
+        lineTo(208 * v, 48 * v)
+        quadraticTo(224 * v, 50 * v, 226 * v, 60 * v)
+        lineTo(226 * v, 70 * v)
+        quadraticTo(226 * v, 74 * v, 222 * v, 74 * v)
+        lineTo(205 * v, 74 * v)
+        arcTo(Rect(163 * v, 53 * v, 205 * v, 95 * v), 0f, -180f, false)
+        lineTo(83 * v, 74 * v)
+        arcTo(Rect(41 * v, 53 * v, 83 * v, 95 * v), 0f, -180f, false)
+        lineTo(20 * v, 74 * v)
         close()
     }
-    drawPath(shell, body)
+    drawPath(shell, Brush.verticalGradient(0f to Color(0xFF6F9BFF), 0.55f to Color(0xFF3A68E0), 1f to Color(0xFF2448B0), startY = 19 * v, endY = 74 * v))
+    val trim = Color(0xFF2448B0)
+    drawLine(trim.copy(alpha = 0.5f), o(20f, 62f), o(226f, 62f), 1.5f * v)
+    drawLine(Color.White.copy(alpha = 0.35f), o(26f, 50f), o(58f, 47f), 2 * v, cap = StrokeCap.Round)
+    drawLine(Color.White.copy(alpha = 0.35f), o(174f, 46f), o(208f, 50f), 2 * v, cap = StrokeCap.Round)
     // Windows.
-    val glass = Color(0xFFCFE3FF)
-    drawPath(Path().apply { moveTo(30 * u, 14 * u); lineTo(40 * u, 6 * u); lineTo(53 * u, 6 * u); lineTo(53 * u, 14 * u); close() }, glass)
-    drawPath(Path().apply { moveTo(56 * u, 14 * u); lineTo(56 * u, 6 * u); lineTo(69 * u, 6 * u); lineTo(79 * u, 14 * u); close() }, glass)
-    drawLine(Color.Black.copy(alpha = 0.15f), Offset(55 * u, 15 * u), Offset(55 * u, 32 * u), 0.8f * u)
-    // Lights.
-    drawRoundRect(Color(0xFFFFE08A), Offset(92 * u, 19 * u), Size(5 * u, 4 * u), CornerRadius(1.5f * u))
-    drawRoundRect(Color(0xFFE5484D), Offset(4 * u, 19 * u), Size(3 * u, 5 * u), CornerRadius(1.2f * u))
-    // Wheels.
-    for (cx in floatArrayOf(24f, 78f)) {
-        drawCircle(Color(0xFF1C2128), 10 * u, Offset(cx * u, 34 * u))
-        drawCircle(Color(0xFFB9C2CE), 5 * u, Offset(cx * u, 34 * u))
-        drawCircle(Color(0xFF6B7583), 1.6f * u, Offset(cx * u, 34 * u))
+    val glass = Brush.linearGradient(listOf(Color(0xFFE3EEFF), Color(0xFF9DB8E8)), o(66f, 23f), o(164f, 43f))
+    drawPath(Path().apply { moveTo(88 * v, 26 * v); quadraticTo(92 * v, 23 * v, 98 * v, 23 * v); lineTo(110 * v, 23 * v); lineTo(110 * v, 43 * v); lineTo(66 * v, 43 * v); close() }, glass)
+    drawPath(Path().apply { moveTo(116 * v, 23 * v); lineTo(134 * v, 23 * v); quadraticTo(142 * v, 23 * v, 148 * v, 29 * v); lineTo(164 * v, 43 * v); lineTo(116 * v, 43 * v); close() }, glass)
+    drawLine(Color.White.copy(alpha = 0.8f), o(122f, 26f), o(132f, 26f), 2.5f * v, cap = StrokeCap.Round)
+    // Door seams, handles and the side mirror.
+    drawLine(trim, o(112f, 46f), o(112f, 70f), 1.6f * v)
+    drawLine(trim, o(164f, 46f), o(164f, 70f), 1.6f * v)
+    drawRoundRect(Color(0xFFDCE6FF), o(148f, 52f), Size(9 * v, 2.5f * v), CornerRadius(1.2f * v))
+    drawRoundRect(Color(0xFFDCE6FF), o(96f, 52f), Size(9 * v, 2.5f * v), CornerRadius(1.2f * v))
+    drawPath(Path().apply { moveTo(160 * v, 40 * v); lineTo(168 * v, 39 * v); lineTo(169 * v, 44 * v); lineTo(161 * v, 45 * v); close() }, trim)
+    // Headlight at the front (right), tail light at the back (left).
+    drawPath(Path().apply { moveTo(212 * v, 53 * v); quadraticTo(222 * v, 53 * v, 224 * v, 58 * v); lineTo(214 * v, 59 * v); close() }, Color(0xFFFFF6D0))
+    drawRoundRect(Color(0xFFFF5A5F), o(14f, 54f), Size(7 * v, 7 * v), CornerRadius(2 * v))
+    drawRoundRect(Color(0xFF1C2A55).copy(alpha = 0.5f), o(20f, 70f), Size(206 * v, 4 * v), CornerRadius(2 * v))
+    // Wheels with spokes that turn as the car rolls.
+    for (x in floatArrayOf(62f, 184f)) {
+        val centre = o(x, 74f)
+        drawCircle(Color(0xFF1B1F27), 17 * v, centre)
+        drawCircle(Color(0xFFD5DCE4), 10 * v, centre)
+        rotate(wheelAngle, centre) {
+            repeat(5) { i ->
+                val a = i * 72f * PI.toFloat() / 180f
+                drawLine(Color(0xFF7B8494), centre, Offset(centre.x + cos(a) * 9 * v, centre.y + sin(a) * 9 * v), 2.6f * v, cap = StrokeCap.Round)
+            }
+        }
+        drawCircle(Color(0xFF7B8494), 3 * v, centre)
     }
 }
 
