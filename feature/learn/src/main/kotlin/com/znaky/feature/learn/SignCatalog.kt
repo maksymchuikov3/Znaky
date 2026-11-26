@@ -14,7 +14,7 @@ internal data class RoadSignInfo(
     val ruleRef: String = "33",
 ) {
     val group: String get() = code.substringBefore('.')
-    val marks: List<Mark> get() = SignArt.byCode.getValue(code)
+
 }
 
 /**

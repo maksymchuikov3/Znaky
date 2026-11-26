@@ -104,7 +104,7 @@ internal fun SignsScreen(onBack: () -> Unit, onOpenCards: (group: String, code: 
                         subtitle = sign.code,
                         showDivider = i > 0,
                         onClick = { onOpenCards(sign.group, sign.code) },
-                        leading = { RoadSign(sign.marks, "Знак ${sign.code}", Modifier.size(44.dp)) },
+                        leading = { RoadSign(sign.code, "Знак ${sign.code}", Modifier.size(44.dp)) },
                     )
                 }
                 if (shown.isEmpty()) ListRow(title = "Нічого не знайдено")

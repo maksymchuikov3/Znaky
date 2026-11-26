@@ -27,16 +27,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.dp
 import com.znaky.core.designsystem.component.GroupedList
 import com.znaky.core.designsystem.component.IconTile
 import com.znaky.core.designsystem.component.ListRow
 import com.znaky.core.designsystem.component.NumberBadge
+import com.znaky.core.art.Street
 import com.znaky.core.designsystem.component.Pill
 import com.znaky.core.designsystem.component.SegmentedControl
 import com.znaky.core.designsystem.component.TopBar
@@ -94,7 +91,7 @@ internal fun ExplainScreen(onBack: () -> Unit, onOpenPriority: () -> Unit, onOpe
                     tilt = mode == 0,
                     dark = c.isDark,
                     time = time,
-                    overlay = { drawTrafficLight() },
+                    overlay = { Street.trafficLight(this, 62f, 63f, lit = 2) },
                 )
                 SegmentedControl(listOf("3D", "Згори"), mode, { mode = it })
                 turnLeftSteps.forEachIndexed { i, s -> StepRow(i, s, active = i == step) }
@@ -134,18 +131,4 @@ private fun StepRow(index: Int, step: ExplainStep, active: Boolean) {
             Text(step.text, style = ZnakyType.subhead, color = c.textSecondary)
         }
     }
-}
-
-/** A traffic light at the near-right corner showing green for our direction. */
-private fun DrawScope.drawTrafficLight() {
-    val w = size.width
-    val h = size.height
-    val tl = Offset(w * 0.62f, h * 0.63f)
-    val box = Size(w * 0.05f, h * 0.12f)
-    drawRoundRect(Color(0xFF1F2933), tl, box, CornerRadius(w * 0.012f))
-    val r = w * 0.014f
-    val cx = tl.x + box.width / 2
-    drawCircle(Color(0xFF5A1D1D), r, Offset(cx, tl.y + box.height * 0.2f))
-    drawCircle(Color(0xFF5A4A1D), r, Offset(cx, tl.y + box.height * 0.5f))
-    drawCircle(SceneColors.Go, r, Offset(cx, tl.y + box.height * 0.8f))
 }
