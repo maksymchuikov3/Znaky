@@ -114,10 +114,10 @@ internal fun CarHubScreen(onBack: () -> Unit, onOpenTopic: (id: String, step: In
             GroupedList(Modifier.padding(horizontal = 16.dp), header = "Словник") {
                 ListRow(
                     "Словник водія",
-                    subtitle = "${termsCount(GlossaryTerms.size)}: від кліренсу до ABS",
+                    subtitle = "Книга термінів: ${termsCount(GlossaryTerms.size)}, ${TermCategory.entries.size} розділів",
                     showDivider = false,
                     onClick = onOpenGlossary,
-                    leading = { Box(Modifier.size(10.dp).clip(RoundedCornerShape(5.dp)).background(TermCategory.PDR.color)) },
+                    leading = { Box(Modifier.size(10.dp).clip(RoundedCornerShape(5.dp)).background(Color(0xFF5B7BC0))) },
                 )
             }
         }
