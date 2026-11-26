@@ -1,10 +1,10 @@
 package com.znaky.feature.home
 
+import android.content.Context
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.znaky.core.domain.progress.streakLength
-import com.znaky.core.domain.readiness.ReadinessCalculator
 import com.znaky.core.domain.repository.ProgressRepository
 import com.znaky.core.domain.repository.QuestionRepository
 import com.znaky.core.domain.repository.SettingsRepository
@@ -13,17 +13,19 @@ import com.znaky.core.model.LicenseCategory
 import com.znaky.core.model.Topic
 import com.znaky.core.model.TopicProgress
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
-
-/** Readiness score from which the app suggests going to the real exam. */
-internal const val READY_THRESHOLD = 85
 
 /** A topic counts as learned when 90% of its questions were last answered correctly. */
 internal const val LEARNED = 0.9f
@@ -35,9 +37,6 @@ internal fun ExamBlock.examShare() = when (this) {
     ExamBlock.VEHICLE -> 4
     ExamBlock.FIRST_AID -> 2
 }
-
-/** Order of the stops on the road to the exam (the shortest block first). */
-internal val StopOrder = listOf(ExamBlock.FIRST_AID, ExamBlock.TRAFFIC_RULES, ExamBlock.ROAD_SAFETY, ExamBlock.VEHICLE)
 
 /** A topic on the study route, in the order of the road rules. */
 @Immutable
@@ -69,37 +68,34 @@ internal fun blockCompletion(route: List<PlanTopic>): Map<ExamBlock, Float> =
         if (total == 0) 0f else topics.sumOf { (it.completion * it.questions).toDouble() }.toFloat() / total
     }
 
-/** The next topic: the first unlearned one, walking the stops in [StopOrder]. */
-internal fun nextTopic(route: List<PlanTopic>): PlanTopic? =
-    StopOrder.firstNotNullOfOrNull { block -> route.firstOrNull { it.block == block && it.completion < LEARNED } }
-
 sealed interface HomeUiState {
     data object Loading : HomeUiState
     data object ContentError : HomeUiState
 
     @Immutable
     data class Ready(
-        val readiness: ReadinessCalculator.Readiness,
-        /** Of the last [recentExams] mock exams (at most 3), how many were passed. */
-        val passedRecent: Int,
-        val recentExams: Int,
-        val nextTopic: PlanTopic?,
-        val blocks: Map<ExamBlock, Float>,
-        val mistakes: Int,
-        val dueForReview: Int,
+        val chapters: List<BookChapter>,
+        /** Index of the chapter to do next; -1 once the whole book is done. */
+        val current: Int,
+        /** Bookmarked questions plus questions last answered wrong. */
+        val saved: Int,
         val streak: Int,
         val category: LicenseCategory = LicenseCategory.B,
-    ) : HomeUiState
+    ) : HomeUiState {
+        val doneCount: Int get() = chapters.count { it.done }
+    }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     questions: QuestionRepository,
     progress: ProgressRepository,
-    calculator: ReadinessCalculator,
     settings: SettingsRepository,
 ) : ViewModel() {
     private val contentState = MutableStateFlow<Boolean?>(null)
+    private val readState = MutableStateFlow(readChapters(context))
     private val today = LocalDate.now().toEpochDay()
 
     init {
@@ -108,46 +104,31 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private val study = combine(
-        progress.observeExamResults(),
-        progress.observeTopicProgress(),
-        questions.observeTopics(),
-    ) { exams, topicProgress, topics ->
-        val recent = exams.sortedByDescending { it.finishedAtMillis }.take(3)
-        val route = studyRoute(topics, topicProgress)
-        StudyPart(calculator.calculate(exams, topicProgress), recent.count { it.passed }, recent.size, nextTopic(route), blockCompletion(route))
+    /** Reading progress lives outside Room, so the screen asks for a refresh when it comes back. */
+    fun refresh() {
+        readState.value = readChapters(context)
     }
 
-    private val daily = combine(
-        progress.observeDueForReview(),
-        progress.observeMistakes(),
-        // 60 days back is enough to count a realistic streak.
-        progress.observeActiveDays(today - 60),
-    ) { due, mistakes, activeDays -> Triple(due.size, mistakes.size, streakLength(activeDays, today)) }
+    private val book = settings.licenseCategory
+        .mapLatest { category -> category to loadBook(context, category) }
+        .flowOn(Dispatchers.IO)
 
-    val uiState: StateFlow<HomeUiState> = combine(contentState, study, daily, settings.licenseCategory) { loaded, s, d, category ->
+    private val route = combine(questions.observeTopics(), progress.observeTopicProgress()) { topics, p -> studyRoute(topics, p) }
+
+    private val saved = combine(progress.observeBookmarks(), progress.observeMistakes()) { b, m -> (b.toSet() + m.keys).size }
+
+    // 60 days back is enough to count a realistic streak.
+    private val streak = combine(progress.observeActiveDays(today - 60), saved) { days, s -> streakLength(days, today) to s }
+
+    val uiState: StateFlow<HomeUiState> = combine(contentState, book, route, readState, streak) { loaded, b, r, read, st ->
         when (loaded) {
             null -> HomeUiState.Loading
             false -> HomeUiState.ContentError
-            true -> HomeUiState.Ready(
-                readiness = s.readiness,
-                passedRecent = s.passed,
-                recentExams = s.recent,
-                nextTopic = s.next,
-                blocks = s.blocks,
-                dueForReview = d.first,
-                mistakes = d.second,
-                streak = d.third,
-                category = category,
-            )
+            true -> {
+                val (category, specs) = b
+                val chapters = buildBook(specs, r, read, category)
+                HomeUiState.Ready(chapters, chapters.indexOfFirst { !it.done }, st.second, st.first, category)
+            }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState.Loading)
 }
-
-private data class StudyPart(
-    val readiness: ReadinessCalculator.Readiness,
-    val passed: Int,
-    val recent: Int,
-    val next: PlanTopic?,
-    val blocks: Map<ExamBlock, Float>,
-)

@@ -82,7 +82,8 @@ DEFAULT_STEPS = [
     # First launch: onboarding (welcome, category, exam date, reminder).
     "Почати", "Далі", "Далі", "Не зараз",
     "Поїхали", "BACK",
-    "Іспит як у ТСЦ", "BACK",
+    "Пробний іспит", "BACK",
+    "Збережене", "BACK",
     "TAB:Вчити", "Будова й експлуатація авто", "Електро", "Мото", "Човен", "BACK",
     "Регулювальник", "BACK",
     "Словник", "BACK",

@@ -56,6 +56,7 @@ import com.znaky.core.designsystem.theme.ZnakyTheme
 import com.znaky.core.designsystem.theme.ZnakyType
 import com.znaky.feature.car.AnatomyRoute
 import com.znaky.feature.car.CarHubRoute
+import com.znaky.feature.car.CourseLessonRoute
 import com.znaky.feature.car.CourseRoute
 import com.znaky.feature.car.GlossaryRoute
 import com.znaky.feature.car.carScreens
@@ -155,7 +156,13 @@ fun ZnakyApp(appViewModel: AppViewModel = hiltViewModel()) {
                     HomeSection.ANATOMY_BOAT -> navController.navigate(AnatomyRoute("boat"))
                 }
             }
-            val openTopic: (String) -> Unit = { navController.navigateToTopic(it) }
+            val openTopic: (String) -> Unit = { id ->
+                when {
+                    // «course:moto:gear» opens a chapter of the moto or boat course from the home book.
+                    id.startsWith("course:") -> id.split(':').let { (_, course, chapter) -> navController.navigate(CourseLessonRoute(course, chapter)) }
+                    else -> navController.navigateToTopic(id)
+                }
+            }
             val openReview: () -> Unit = { navController.navigateToReview() }
             onboardingScreen(
                 onDone = {
