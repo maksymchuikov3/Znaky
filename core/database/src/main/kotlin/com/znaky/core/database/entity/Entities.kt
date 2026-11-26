@@ -51,6 +51,13 @@ data class ReviewCardEntity(
     val dueEpochDay: Long,
 )
 
+/** A question the user saved with the bookmark button. */
+@Entity(tableName = "bookmarks")
+data class BookmarkEntity(
+    @PrimaryKey val questionId: String,
+    val createdAtMillis: Long,
+)
+
 @Entity(tableName = "exam_results")
 data class ExamResultEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

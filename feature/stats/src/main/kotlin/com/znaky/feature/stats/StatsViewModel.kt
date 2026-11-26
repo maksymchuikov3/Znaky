@@ -24,6 +24,9 @@ data class WeekDay(val label: String, val active: Boolean, val isToday: Boolean)
 data class WeakTopic(val id: String, val title: String, val completion: Float)
 
 @Immutable
+data class TopicRow(val id: String, val number: String, val title: String, val completion: Float)
+
+@Immutable
 data class StatsUiState(
     val readiness: ReadinessCalculator.Readiness,
     val week: List<WeekDay>,
@@ -31,6 +34,12 @@ data class StatsUiState(
     /** Oldest first, for the bar chart. */
     val recentExams: List<ExamResult>,
     val weakTopics: List<WeakTopic>,
+    /** Every topic, weakest first. */
+    val topics: List<TopicRow> = emptyList(),
+    /** Of the last (at most 5) exams, how many were passed, and how many of the latest in a row. */
+    val passedOfLast5: Int = 0,
+    val lastExamsCount: Int = 0,
+    val passedInARow: Int = 0,
 )
 
 private val dayLabels = listOf("П", "В", "С", "Ч", "П", "С", "Н")
@@ -64,12 +73,21 @@ class StatsViewModel @Inject constructor(
             .take(3)
             .map { WeakTopic(it.topicId, titles[it.topicId] ?: it.topicId, it.completion) }
 
+        val byId = topicProgress.associateBy { it.topicId }
+        val rows = topics
+            .map { t -> TopicRow(t.id, t.number.takeIf { n -> n.toIntOrNull() != null }.orEmpty(), t.title, byId[t.id]?.completion ?: 0f) }
+            .sortedBy { it.completion }
+        val last5 = exams.sortedByDescending { it.finishedAtMillis }.take(5)
         StatsUiState(
             readiness = calculator.calculate(exams, topicProgress),
             week = week,
             streak = streak,
             recentExams = exams.take(8).reversed(),
             weakTopics = weak,
+            topics = rows,
+            passedOfLast5 = last5.count { it.passed },
+            lastExamsCount = last5.size,
+            passedInARow = last5.takeWhile { it.passed }.size,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 }

@@ -9,7 +9,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -36,6 +38,10 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
+import com.znaky.core.art.Officer
+import com.znaky.core.art.RoadSigns
+import com.znaky.core.art.Street
+import com.znaky.core.designsystem.art.ArtImage
 import com.znaky.core.designsystem.theme.ZnakyTheme
 import com.znaky.core.designsystem.theme.ZnakyType
 import com.znaky.core.model.Answer
@@ -117,7 +123,7 @@ fun QuestionContent(
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(question.text, style = ZnakyType.headline.copy(lineHeight = ZnakyType.body.lineHeight), color = ZnakyTheme.colors.textPrimary)
-        question.imageAsset?.let { AssetImage(it) }
+        question.imageAsset?.let { QuestionImage(it) }
         question.answers.forEachIndexed { i, answer ->
             AnswerOption(
                 index = i,
@@ -126,6 +132,39 @@ fun QuestionContent(
                 enabled = enabled,
                 onClick = { onAnswer(answer.id) },
             )
+        }
+    }
+}
+
+/**
+ * The picture of a question: a bundled bitmap path, or drawn art —
+ * `art:sign:<code>` for a road sign, `art:scene:crossroads|crossroads-light|officer` for a street scene.
+ */
+@Composable
+fun QuestionImage(path: String, modifier: Modifier = Modifier) {
+    if (!path.startsWith("art:")) {
+        AssetImage(path)
+        return
+    }
+    val c = ZnakyTheme.colors
+    val parts = path.split(':')
+    val kind = parts.getOrNull(1)
+    val name = parts.getOrNull(2).orEmpty()
+    if (kind == "sign") {
+        Box(
+            modifier.fillMaxWidth().height(150.dp).clip(RoundedCornerShape(18.dp)).background(c.surface),
+            contentAlignment = Alignment.Center,
+        ) {
+            ArtImage("Знак $name", Modifier.size(120.dp)) { RoadSigns.draw(this, name) }
+        }
+    } else {
+        Box(modifier.fillMaxWidth().height(190.dp).clip(RoundedCornerShape(18.dp)), contentAlignment = Alignment.Center) {
+            ArtImage("Перехрестя", Modifier.fillMaxSize()) {
+                Street.crossroads(this, c.isDark, zebra = name == "crossroads")
+                if (name == "crossroads-light") Street.trafficLight(this, 62f, 62f, lit = 2)
+                if (name == "crossroads") Street.mainRoadSign(this, 38f, 64f)
+            }
+            if (name == "officer") ArtImage("Регулювальник", Modifier.size(60.dp, 94.dp)) { Officer.draw(this, armsOut = true, t = 0f) }
         }
     }
 }

@@ -2,6 +2,7 @@ package com.znaky.core.data.repository
 
 import com.znaky.core.database.dao.ProgressDao
 import com.znaky.core.database.entity.AnswerLogEntity
+import com.znaky.core.database.entity.BookmarkEntity
 import com.znaky.core.database.entity.ReviewCardEntity
 import com.znaky.core.domain.repository.ProgressRepository
 import com.znaky.core.domain.review.LeitnerScheduler
@@ -24,7 +25,7 @@ class OfflineProgressRepository @Inject constructor(
 
     private fun today(): Long = LocalDate.now().toEpochDay()
 
-    override suspend fun recordAnswer(record: AnswerRecord) {
+    override suspend fun recordAnswer(record: AnswerRecord): ReviewCard {
         dao.insertAnswer(
             AnswerLogEntity(
                 questionId = record.questionId,
@@ -36,6 +37,23 @@ class OfflineProgressRepository @Inject constructor(
         val previous = dao.getReviewCard(record.questionId)?.let { ReviewCard(it.questionId, it.box, it.dueEpochDay) }
         val next = scheduler.schedule(previous, record.questionId, record.isCorrect, today())
         dao.upsertReviewCard(ReviewCardEntity(next.questionId, next.box, next.dueEpochDay))
+        return next
+    }
+
+    override fun observeReviewCards(): Flow<List<ReviewCard>> =
+        dao.observeReviewCards().map { rows -> rows.map { ReviewCard(it.questionId, it.box, it.dueEpochDay) } }
+
+    override fun observeMistakes(): Flow<Map<String, Long>> =
+        dao.observeMistakes().map { rows -> rows.associate { it.questionId to it.answeredAtMillis } }
+
+    override fun observeLastMistakes(): Flow<Map<String, Long>> =
+        dao.observeLastMistakes().map { rows -> rows.associate { it.questionId to it.answeredAtMillis } }
+
+    override fun observeBookmarks(): Flow<List<String>> = dao.observeBookmarks()
+
+    override suspend fun setBookmarked(questionId: String, bookmarked: Boolean) {
+        if (bookmarked) dao.insertBookmark(BookmarkEntity(questionId, System.currentTimeMillis()))
+        else dao.deleteBookmark(questionId)
     }
 
     override suspend fun saveExamResult(result: ExamResult) = dao.insertExamResult(result.toEntity())

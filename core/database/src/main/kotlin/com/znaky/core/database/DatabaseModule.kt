@@ -15,7 +15,9 @@ internal object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): ZnakyDatabase =
-        Room.databaseBuilder(context, ZnakyDatabase::class.java, "znaky.db").build()
+        Room.databaseBuilder(context, ZnakyDatabase::class.java, "znaky.db")
+            .addMigrations(MIGRATION_1_2)
+            .build()
 
     @Provides
     fun provideContentDao(db: ZnakyDatabase) = db.contentDao()

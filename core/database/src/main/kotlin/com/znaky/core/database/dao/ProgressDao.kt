@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.znaky.core.database.entity.AnswerLogEntity
+import com.znaky.core.database.entity.BookmarkEntity
 import com.znaky.core.database.entity.ExamResultEntity
 import com.znaky.core.database.entity.ReviewCardEntity
 import kotlinx.coroutines.flow.Flow
@@ -15,6 +16,8 @@ data class TopicProgressRow(
     val answeredQuestions: Int,
     val correctlyAnsweredQuestions: Int,
 )
+
+data class MistakeRow(val questionId: String, val answeredAtMillis: Long)
 
 @Dao
 interface ProgressDao {
@@ -39,6 +42,32 @@ interface ProgressDao {
 
     @Query("SELECT COUNT(*) FROM answer_log WHERE answeredAtMillis >= :sinceMillis")
     fun observeAnswerCount(sinceMillis: Long): Flow<Int>
+
+    @Query("SELECT * FROM review_cards")
+    fun observeReviewCards(): Flow<List<ReviewCardEntity>>
+
+    /** Questions whose latest answer was wrong, newest mistake first, with the time of that answer. */
+    @Query(
+        """
+        SELECT a.questionId AS questionId, a.answeredAtMillis AS answeredAtMillis FROM answer_log a
+        WHERE a.id = (SELECT MAX(b.id) FROM answer_log b WHERE b.questionId = a.questionId) AND a.isCorrect = 0
+        ORDER BY a.answeredAtMillis DESC
+        """,
+    )
+    fun observeMistakes(): Flow<List<MistakeRow>>
+
+    /** Time of the latest wrong answer per question. */
+    @Query("SELECT questionId AS questionId, MAX(answeredAtMillis) AS answeredAtMillis FROM answer_log WHERE isCorrect = 0 GROUP BY questionId")
+    fun observeLastMistakes(): Flow<List<MistakeRow>>
+
+    @Query("SELECT questionId FROM bookmarks ORDER BY createdAtMillis DESC")
+    fun observeBookmarks(): Flow<List<String>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertBookmark(bookmark: BookmarkEntity)
+
+    @Query("DELETE FROM bookmarks WHERE questionId = :questionId")
+    suspend fun deleteBookmark(questionId: String)
 
     @Insert
     suspend fun insertExamResult(result: ExamResultEntity)

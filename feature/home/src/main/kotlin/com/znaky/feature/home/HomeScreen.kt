@@ -1,50 +1,59 @@
 package com.znaky.feature.home
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AddRoad
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.DirectionsCar
-import androidx.compose.material.icons.rounded.Gavel
-import androidx.compose.material.icons.rounded.Lightbulb
+import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.material.icons.rounded.LocalFireDepartment
-import androidx.compose.material.icons.rounded.Signpost
-import androidx.compose.material.icons.rounded.SportsEsports
+import androidx.compose.material.icons.rounded.MedicalServices
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material.icons.rounded.Traffic
+import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -53,16 +62,16 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
-import com.znaky.core.designsystem.component.LinearBar
+import com.znaky.core.art.ArtPath
+import com.znaky.core.art.Street
+import com.znaky.core.designsystem.art.ArtImage
 import com.znaky.core.designsystem.component.LoadingBox
-import com.znaky.core.designsystem.component.ProgressRing
 import com.znaky.core.designsystem.component.ZButton
-import com.znaky.core.designsystem.theme.ZnakyColors
 import com.znaky.core.designsystem.theme.ZnakyTheme
 import com.znaky.core.designsystem.theme.ZnakyType
 import com.znaky.core.domain.readiness.ReadinessCalculator.Level
+import com.znaky.core.model.ExamBlock
 import kotlinx.serialization.Serializable
-import java.time.LocalDateTime
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -75,9 +84,20 @@ enum class HomeSection {
     RULES, SIGNS, MARKINGS, EXPLAIN, CAR, SIGN_GAME,
     /** Starts a mock exam right away. */
     EXAM,
-    /** The exam rules screen with the start button. */
+    /** The mock exam rules screen with a start button. */
     EXAM_INTRO,
     TOPICS, PROGRESS, LEARN, TRAINING,
+    /** «Повторення» with the spaced-repetition track. */
+    REPETITION,
+    /** Practice the questions whose latest answer was wrong. */
+    MISTAKES,
+    BOOKMARKS,
+    /** 20 random questions without a timer. */
+    RANDOM,
+    /** «Будова авто»: 3D model with numbered parts. */
+    ANATOMY,
+    GLOSSARY,
+    OFFICER,
 }
 
 fun NavGraphBuilder.homeScreen(
@@ -92,27 +112,22 @@ fun NavGraphBuilder.homeScreen(
     }
 }
 
-@Immutable
-internal data class Tile(val section: HomeSection, val label: String, val icon: ImageVector, val fg: (ZnakyColors) -> Color, val bg: (ZnakyColors) -> Color)
+internal fun questionsWord(n: Int): String = plural(n, "питання", "питання", "питань")
 
-/** Reference sections, the same on the home screen and in the Learn tab. */
-internal val learnTiles = listOf(
-    Tile(HomeSection.RULES, "Правила", Icons.Rounded.Gavel, { it.teal }, { it.tealTint }),
-    Tile(HomeSection.SIGNS, "Знаки", Icons.Rounded.Signpost, { it.red }, { it.redTint }),
-    Tile(HomeSection.MARKINGS, "Розмітка", Icons.Rounded.AddRoad, { it.slate }, { it.slateTint }),
-    Tile(HomeSection.EXPLAIN, "Пояснення", Icons.Rounded.Lightbulb, { it.purple }, { it.purpleTint }),
-    Tile(HomeSection.CAR, "3D-машина", Icons.Rounded.DirectionsCar, { it.sand }, { it.sandTint }),
-    Tile(HomeSection.SIGN_GAME, "Гра", Icons.Rounded.SportsEsports, { it.onAccentTint }, { it.accentTint }),
-)
+internal fun mistakesWord(n: Int): String = plural(n, "помилка", "помилки", "помилок")
 
-private val weekdays = listOf("ПОНЕДІЛОК", "ВІВТОРОК", "СЕРЕДА", "ЧЕТВЕР", "П’ЯТНИЦЯ", "СУБОТА", "НЕДІЛЯ")
-private val months = listOf("СІЧНЯ", "ЛЮТОГО", "БЕРЕЗНЯ", "КВІТНЯ", "ТРАВНЯ", "ЧЕРВНЯ", "ЛИПНЯ", "СЕРПНЯ", "ВЕРЕСНЯ", "ЖОВТНЯ", "ЛИСТОПАДА", "ГРУДНЯ")
+internal fun daysWord(n: Int): String = plural(n, "день", "дні", "днів")
 
-private fun greeting(hour: Int) = when (hour) {
-    in 5..11 -> "Доброго ранку"
-    in 12..17 -> "Доброго дня"
-    in 18..22 -> "Доброго вечора"
-    else -> "Доброї ночі"
+/** Ukrainian plural: [one] for 1, 21…; [few] for 2–4, 22…; [many] otherwise. */
+internal fun plural(n: Int, one: String, few: String, many: String): String {
+    val mod100 = n % 100
+    val mod10 = n % 10
+    return when {
+        mod100 in 11..14 -> many
+        mod10 == 1 -> one
+        mod10 in 2..4 -> few
+        else -> many
+    }
 }
 
 @Composable
@@ -120,7 +135,7 @@ internal fun HomeScreen(
     state: HomeUiState,
     onOpenSection: (HomeSection) -> Unit,
     onOpenTopic: (String) -> Unit,
-    onOpenReview: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onOpenReview: () -> Unit,
 ) {
     val c = ZnakyTheme.colors
     when (state) {
@@ -131,46 +146,37 @@ internal fun HomeScreen(
         is HomeUiState.Ready -> LazyColumn(
             Modifier.fillMaxSize().background(c.background).statusBarsPadding(),
             contentPadding = PaddingValues(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             item(key = "header") { Header(state.streak, onStreak = { onOpenSection(HomeSection.PROGRESS) }) }
-            item(key = "readiness") {
-                ReadinessCard(state, onDetails = { onOpenSection(HomeSection.PROGRESS) }, onExam = { onOpenSection(HomeSection.EXAM) })
+            item(key = "road") { RoadCard(state, onClick = { onOpenSection(HomeSection.PROGRESS) }) }
+            item(key = "next") {
+                NextStopCard(
+                    state.nextTopic,
+                    onGo = { topic -> if (topic != null) onOpenTopic(topic.id) else onOpenSection(HomeSection.EXAM_INTRO) },
+                )
             }
-            item(key = "today") {
-                Row(
-                    Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    PlanCard(
-                        state.nextTopic,
-                        Modifier.weight(1f),
-                        onClick = { state.nextTopic?.let { onOpenTopic(it.id) } ?: onOpenSection(HomeSection.TOPICS) },
+            item(key = "chips") {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Chip(
+                        icon = Icons.Rounded.WarningAmber,
+                        title = if (state.mistakes > 0) "${state.mistakes} ${mistakesWord(state.mistakes)}" else "Помилок немає",
+                        subtitle = if (state.dueForReview > 0) "повторити ${state.dueForReview}" else "повторення",
+                        bg = c.redTint,
+                        fg = c.red,
+                        modifier = Modifier.weight(1f),
+                        onClick = { onOpenSection(HomeSection.REPETITION) },
                     )
-                    ReviewCard(
-                        state.dueForReview,
-                        Modifier.weight(1f),
-                        onClick = { if (state.dueForReview > 0) onOpenReview() else onOpenSection(HomeSection.TRAINING) },
+                    Chip(
+                        icon = Icons.Rounded.Timer,
+                        title = "Іспит як у ТСЦ",
+                        subtitle = "20 питань · 20 хв",
+                        bg = c.primaryTint,
+                        fg = c.link,
+                        modifier = Modifier.weight(1f),
+                        onClick = { onOpenSection(HomeSection.EXAM_INTRO) },
                     )
                 }
-            }
-            item(key = "goal") { DailyGoal(state.answersToday) }
-            item(key = "learnTitle") {
-                Text(
-                    "Вчити",
-                    style = ZnakyType.title2,
-                    color = c.textPrimary,
-                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp).semantics { heading() },
-                )
-            }
-            item(key = "learn") { LearnGrid(onOpenSection) }
-            item(key = "disclaimer") {
-                Text(
-                    "Незалежний навчальний застосунок. Не є офіційним продуктом МВС чи ГСЦ МВС.",
-                    style = ZnakyType.footnote.copy(fontWeight = ZnakyType.subhead.fontWeight),
-                    color = c.textTertiary,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                )
             }
         }
     }
@@ -179,226 +185,242 @@ internal fun HomeScreen(
 @Composable
 private fun Header(streak: Int, onStreak: () -> Unit) {
     val c = ZnakyTheme.colors
-    // The date is read once per composition of the screen, not every frame.
-    val now = remember { LocalDateTime.now() }
     Row(
         Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 16.dp),
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                "${weekdays[now.dayOfWeek.value - 1]}, ${now.dayOfMonth} ${months[now.monthValue - 1]}",
-                style = ZnakyType.footnote,
-                color = c.textSecondary,
-            )
-            Text(greeting(now.hour), style = ZnakyType.largeTitle, color = c.textPrimary, modifier = Modifier.semantics { heading() })
-        }
-        Row(
-            Modifier
-                .heightIn(min = 40.dp)
-                .clip(RoundedCornerShape(50))
-                .background(c.accentTint)
-                .clickable(role = Role.Button, onClick = onStreak)
-                .clearAndSetSemantics { contentDescription = "Серія $streak ${daysWord(streak)}" }
-                .padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Icon(Icons.Rounded.LocalFireDepartment, contentDescription = null, tint = c.onAccentTint, modifier = Modifier.size(18.dp))
-            Text("$streak", style = ZnakyType.bodyStrong, color = c.onAccentTint)
-        }
+        Text("Шлях до ТСЦ", style = ZnakyType.largeTitle, color = c.textPrimary, modifier = Modifier.weight(1f).semantics { heading() })
+        StreakPill(streak, onStreak)
     }
 }
 
 @Composable
-private fun ReadinessCard(state: HomeUiState.Ready, onDetails: () -> Unit, onExam: () -> Unit) {
+internal fun StreakPill(streak: Int, onClick: (() -> Unit)? = null) {
     val c = ZnakyTheme.colors
-    val r = state.readiness
-    val ready = r.level == Level.READY
-    val text = when {
-        ready -> "Ви готові: понад $READY_THRESHOLD% і три пробні іспити поспіль складено."
-        state.recentExams == 0 -> "Йти на іспит можна з $READY_THRESHOLD%. Складіть пробний іспит, щоб побачити, де ви зараз."
-        else -> "Йти на іспит можна з $READY_THRESHOLD%. Зараз ви складаєте ${state.passedRecent} з ${state.recentExams} пробних."
+    Row(
+        Modifier
+            .clip(CircleShape)
+            .background(c.accentTint)
+            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .clearAndSetSemantics { contentDescription = "Серія: $streak ${daysWord(streak)} поспіль" },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Rounded.LocalFireDepartment, contentDescription = null, tint = c.accent, modifier = Modifier.size(16.dp))
+        Text(" $streak ${daysWord(streak)}", style = ZnakyType.footnote, color = c.onAccentTint)
     }
+}
+
+private class Stop(val label: String, val icon: ImageVector, val done: Boolean)
+
+private fun stops(state: HomeUiState.Ready): List<Stop> {
+    val b = state.blocks
+    fun learned(block: ExamBlock) = (b[block] ?: 0f) >= LEARNED
+    return listOf(
+        Stop("Допомога", Icons.Rounded.MedicalServices, learned(ExamBlock.FIRST_AID)),
+        Stop("Правила", Icons.Rounded.Traffic, learned(ExamBlock.TRAFFIC_RULES)),
+        Stop("Безпека", Icons.Rounded.Shield, learned(ExamBlock.ROAD_SAFETY)),
+        Stop("Будова", Icons.Rounded.Settings, learned(ExamBlock.VEHICLE)),
+        Stop("Пробні", Icons.Rounded.Timer, state.passedRecent >= 3),
+        Stop("ТСЦ", Icons.Rounded.Flag, state.readiness.level == Level.READY),
+    )
+}
+
+@Composable
+private fun RoadCard(state: HomeUiState.Ready, onClick: () -> Unit) {
+    val c = ZnakyTheme.colors
+    val score = state.readiness.score
     Column(
         Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .clip(RoundedCornerShape(26.dp))
             .background(c.surface)
+            .clickable(role = Role.Button, onClick = onClick)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Row(
-            Modifier.clickable(role = Role.Button, onClickLabel = "Відкрити прогрес", onClick = onDetails),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            ThresholdRing(r.score, ready)
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Готовність до іспиту", style = ZnakyType.headline, color = c.textPrimary)
-                Text(text, style = ZnakyType.subhead, color = c.textSecondary)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Speedometer(score / 100f, Modifier.size(width = 112.dp, height = 76.dp))
+            Column(Modifier.weight(1f)) {
+                Text("$score%", style = ZnakyType.largeTitle.copy(fontSize = 34.sp), color = c.textPrimary)
+                Text("готовність до іспиту", style = ZnakyType.subhead, color = c.textSecondary)
+                Text(
+                    if (state.recentExams == 0) "мета: 3 пробні поспіль без >2 помилок"
+                    else "пробні: ${state.passedRecent} з ${state.recentExams} складено · мета 3 поспіль",
+                    style = ZnakyType.subhead,
+                    color = c.textTertiary,
+                )
             }
         }
-        ZButton("Пробний іспит · 20 хв", onClick = onExam, modifier = Modifier.fillMaxWidth())
+        StopsRoad(stops(state))
     }
 }
 
-/** Readiness ring with a small green dot where the 85% threshold is. */
+/** A dashboard gauge: grey dial, green arc up to [value], needle and hub. */
 @Composable
-private fun ThresholdRing(score: Int, ready: Boolean) {
+private fun Speedometer(value: Float, modifier: Modifier) {
     val c = ZnakyTheme.colors
-    val marker = c.success
-    ProgressRing(
-        score / 100f,
-        modifier = Modifier.semantics { contentDescription = "Готовність $score відсотків, поріг $READY_THRESHOLD" },
-        size = 72.dp,
-        stroke = 9.dp,
-        color = if (ready) c.success else c.primary,
-    ) {
-        Canvas(Modifier.matchParentSize()) {
-            val stroke = 9.dp.toPx()
-            val radius = (size.minDimension - stroke) / 2
-            val angle = (-90f + 360f * READY_THRESHOLD / 100f) * PI.toFloat() / 180f
-            drawCircle(
-                marker,
-                radius = 3.5.dp.toPx(),
-                center = Offset(center.x + radius * cos(angle), center.y + radius * sin(angle)),
-            )
+    val animated by animateFloatAsState(value.coerceIn(0f, 1f), tween(900), label = "gauge")
+    val track = c.surfaceMuted
+    val arc = if (value >= READY_THRESHOLD / 100f) c.success else Color(0xFF2FA66A)
+    val needle = c.textPrimary
+    Canvas(modifier.clearAndSetSemantics { contentDescription = "Готовність ${(value * 100).toInt()} відсотків" }) {
+        val stroke = 11.dp.toPx()
+        val r = minOf(size.width / 2, size.height - stroke / 2) - stroke / 2
+        val center = Offset(size.width / 2, size.height - 6.dp.toPx())
+        val topLeft = Offset(center.x - r, center.y - r)
+        val arcSize = Size(r * 2, r * 2)
+        drawArc(track, 180f, 180f, false, topLeft, arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
+        drawArc(arc, 180f, 180f * animated, false, topLeft, arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
+        val angle = PI + PI * animated
+        val len = r * 0.78f
+        val tip = Offset(center.x + (cos(angle) * len).toFloat(), center.y + (sin(angle) * len).toFloat())
+        drawLine(needle, center, tip, strokeWidth = 4.dp.toPx(), cap = StrokeCap.Round)
+        drawCircle(needle, 6.dp.toPx(), center)
+    }
+}
+
+@Composable
+private fun StopsRoad(stops: List<Stop>) {
+    val c = ZnakyTheme.colors
+    val current = stops.indexOfFirst { !it.done }.let { if (it < 0) stops.lastIndex else it }
+    val road = c.surfaceMuted
+    val doneFill = c.success.copy(alpha = 0.35f)
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(Modifier.fillMaxWidth().height(40.dp), contentAlignment = Alignment.Center) {
+            Canvas(Modifier.fillMaxWidth().height(26.dp)) {
+                val h = size.height
+                val step = size.width / stops.size
+                drawRoundRect(road, cornerRadius = androidx.compose.ui.geometry.CornerRadius(h / 2, h / 2))
+                val doneWidth = step * current + step / 2
+                drawRoundRect(doneFill, size = Size(doneWidth, h), cornerRadius = androidx.compose.ui.geometry.CornerRadius(h / 2, h / 2))
+                drawLine(
+                    Color.White.copy(alpha = 0.8f),
+                    Offset(step / 2, h / 2),
+                    Offset(size.width - step / 2, h / 2),
+                    strokeWidth = 1.5.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f)),
+                )
+            }
+            Row(Modifier.fillMaxWidth()) {
+                stops.forEachIndexed { i, stop ->
+                    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        StopDot(stop, current = i == current)
+                    }
+                }
+            }
         }
-        Text("$score%", style = ZnakyType.headline.copy(fontSize = 18.sp), color = c.textPrimary)
-    }
-}
-
-@Composable
-private fun PlanCard(topic: PlanTopic?, modifier: Modifier, onClick: () -> Unit) {
-    val c = ZnakyTheme.colors
-    Column(
-        modifier
-            .fillMaxHeight()
-            .heightIn(min = 112.dp)
-            .clip(RoundedCornerShape(22.dp))
-            .background(c.surface)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(14.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text("ДАЛІ ЗА ПЛАНОМ", style = ZnakyType.caption, color = c.textTertiary)
-        Spacer(Modifier.height(10.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                topic?.title ?: "Усі теми пройдено",
-                style = ZnakyType.bodyStrong,
-                color = c.textPrimary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            LinearBar(topic?.completion ?: 1f, height = 5.dp, color = c.teal)
-        }
-    }
-}
-
-@Composable
-private fun ReviewCard(due: Int, modifier: Modifier, onClick: () -> Unit) {
-    val c = ZnakyTheme.colors
-    Column(
-        modifier
-            .fillMaxHeight()
-            .heightIn(min = 112.dp)
-            .clip(RoundedCornerShape(22.dp))
-            .background(c.redTint)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(14.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text("ПОВТОРИТИ СЬОГОДНІ", style = ZnakyType.caption, color = c.red)
-        Spacer(Modifier.height(10.dp))
-        Column {
-            Text("$due", style = ZnakyType.largeTitle.copy(fontSize = 28.sp, lineHeight = 30.sp), color = c.red)
-            Text(
-                if (due > 0) "${questionsWord(due)} з помилками" else "помилок на сьогодні немає",
-                style = ZnakyType.subhead,
-                color = c.red,
-            )
-        }
-    }
-}
-
-@Composable
-private fun DailyGoal(answers: Int) {
-    val c = ZnakyTheme.colors
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(c.surface)
-            .semantics(mergeDescendants = true) {}
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text("Ціль дня", style = ZnakyType.bodyStrong, color = c.textPrimary)
-        LinearBar(answers / DAILY_GOAL.toFloat(), Modifier.weight(1f), height = 8.dp, color = if (answers >= DAILY_GOAL) c.success else c.primary)
-        Text(
-            "${answers.coerceAtMost(999)}/$DAILY_GOAL",
-            style = ZnakyType.bodyStrong.copy(fontFeatureSettings = "tnum"),
-            color = c.textSecondary,
-        )
-    }
-}
-
-@Composable
-internal fun LearnGrid(onOpen: (HomeSection) -> Unit) {
-    Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        learnTiles.chunked(3).forEach { row ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                row.forEach { tile -> LearnTile(tile, Modifier.weight(1f)) { onOpen(tile.section) } }
+        Row(Modifier.fillMaxWidth()) {
+            stops.forEachIndexed { i, stop ->
+                Text(
+                    stop.label,
+                    style = ZnakyType.caption.copy(fontWeight = FontWeight.SemiBold),
+                    color = if (i == current) c.onAccentTint else c.textTertiary,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }
 }
 
 @Composable
-private fun LearnTile(tile: Tile, modifier: Modifier, onClick: () -> Unit) {
+private fun StopDot(stop: Stop, current: Boolean) {
     val c = ZnakyTheme.colors
-    Column(
-        modifier
-            .heightIn(min = 84.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(c.surface)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(10.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Box(
-            Modifier.size(34.dp).clip(RoundedCornerShape(11.dp)).background(tile.bg(c)),
+    when {
+        stop.done -> Box(Modifier.size(30.dp).clip(CircleShape).background(c.success), contentAlignment = Alignment.Center) {
+            Icon(Icons.Rounded.Check, contentDescription = "${stop.label}: пройдено", tint = c.surface, modifier = Modifier.size(18.dp))
+        }
+        current -> Box(
+            Modifier.size(36.dp).clip(CircleShape).background(c.accent).padding(3.dp).clip(CircleShape).background(c.primary),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(tile.icon, contentDescription = null, tint = tile.fg(c), modifier = Modifier.size(19.dp))
+            Icon(Icons.Rounded.DirectionsCar, contentDescription = "${stop.label}: ви тут", tint = c.onPrimary, modifier = Modifier.size(18.dp))
         }
-        Spacer(Modifier.height(8.dp))
-        Text(tile.label, style = ZnakyType.footnote.copy(fontSize = 14.sp), color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        else -> Box(
+            Modifier.size(30.dp).clip(CircleShape).background(c.surface).border(1.5.dp, c.separator, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(stop.icon, contentDescription = stop.label, tint = c.textTertiary, modifier = Modifier.size(16.dp))
+        }
     }
 }
 
-internal fun questionsWord(n: Int): String {
-    val mod10 = n % 10
-    val mod100 = n % 100
-    return when {
-        mod10 == 1 && mod100 != 11 -> "питання"
-        mod10 in 2..4 && mod100 !in 12..14 -> "питання"
-        else -> "питань"
+@Composable
+private fun NextStopCard(topic: PlanTopic?, onGo: (PlanTopic?) -> Unit) {
+    val c = ZnakyTheme.colors
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp).clip(RoundedCornerShape(26.dp)).background(c.surface),
+    ) {
+        BoxWithConstraints(Modifier.fillMaxWidth().height(140.dp).clip(RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp))) {
+            val side = maxWidth
+            val dark = c.isDark
+            ArtImage("Перехрестя: маршрут праворуч", Modifier.requiredSize(side).align(Alignment.Center)) {
+                Street.crossroads(this, dark, zebra = true)
+                Street.trafficLight(this, 60f, 68f, lit = 2)
+                Street.route(this, ArtPath().moveTo(54.5f, 92f).lineTo(54.5f, 66f).quadTo(54.5f, 54.5f, 68f, 54.5f).lineTo(98f, 54.5f))
+                Street.car(this, 45.5f, 30f, 180f, 0xFFF2B13A)
+                Street.car(this, 54.5f, 84f, 0f, 0xFF2F62C9)
+            }
+            val label = when {
+                topic == null -> "Фініш близько"
+                topic.number.toIntOrNull() != null -> "ПДР · розділ ${topic.number}"
+                else -> topic.block.label()
+            }
+            Text(
+                label,
+                style = ZnakyType.footnote,
+                color = Color(0xFF14202E),
+                modifier = Modifier.align(Alignment.TopStart).padding(12.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.9f)).padding(horizontal = 10.dp, vertical = 4.dp),
+            )
+        }
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("НАСТУПНА ЗУПИНКА", style = ZnakyType.caption, color = c.onAccentTint)
+            Text(topic?.title ?: "Пробні іспити", style = ZnakyType.title, color = c.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(
+                if (topic == null) "Усі теми пройдено. Складіть 3 пробні поспіль — і ви готові"
+                else "${topic.questions} ${questionsWord(topic.questions)} з офіційної бази · ~${minutesFor(topic.questions)} хв",
+                style = ZnakyType.subhead,
+                color = c.textSecondary,
+            )
+            ZButton(
+                if (topic == null) "Пробний іспит" else "Поїхали",
+                onClick = { onGo(topic) },
+                icon = Icons.Rounded.PlayArrow,
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+            )
+        }
     }
 }
 
-internal fun daysWord(n: Int): String {
-    val mod10 = n % 10
-    val mod100 = n % 100
-    return when {
-        mod10 == 1 && mod100 != 11 -> "день"
-        mod10 in 2..4 && mod100 !in 12..14 -> "дні"
-        else -> "днів"
+/** About 25 seconds per question, rounded up to whole minutes. */
+internal fun minutesFor(questions: Int) = ((questions * 25 + 59) / 60).coerceAtLeast(1)
+
+internal fun ExamBlock.label() = when (this) {
+    ExamBlock.TRAFFIC_RULES -> "Правила дорожнього руху"
+    ExamBlock.ROAD_SAFETY -> "Основи безпеки руху"
+    ExamBlock.VEHICLE -> "Будова й експлуатація авто"
+    ExamBlock.FIRST_AID -> "Домедична допомога"
+}
+
+@Composable
+private fun Chip(icon: ImageVector, title: String, subtitle: String, bg: Color, fg: Color, modifier: Modifier, onClick: () -> Unit) {
+    val c = ZnakyTheme.colors
+    Row(
+        modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(bg)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(22.dp))
+        Column {
+            Text(title, style = ZnakyType.bodyStrong, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(subtitle, style = ZnakyType.footnote.copy(fontWeight = FontWeight.Normal), color = c.textSecondary, maxLines = 1)
+        }
     }
 }

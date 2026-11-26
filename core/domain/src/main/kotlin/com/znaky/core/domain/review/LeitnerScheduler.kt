@@ -4,11 +4,11 @@ import com.znaky.core.model.ReviewCard
 
 /**
  * Spaced repetition with Leitner boxes. A correct answer moves the question one box up
- * (longer interval); a mistake sends it back to box 1, due today.
+ * (1 → 3 → 7 → 14 days, then learned); a mistake sends it back to box 1, due today.
  */
 class LeitnerScheduler(
     /** Days until the next review, indexed by box - 1. */
-    private val intervalsDays: List<Int> = listOf(0, 1, 3, 7, 21),
+    private val intervalsDays: List<Int> = listOf(0, 1, 3, 7, 14, 60),
 ) {
     init {
         require(intervalsDays.size == ReviewCard.MAX_BOX)
