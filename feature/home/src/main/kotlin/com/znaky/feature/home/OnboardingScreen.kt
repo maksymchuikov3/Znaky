@@ -146,7 +146,7 @@ private fun Welcome(onStart: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("ЗНАКИ · ПІДГОТОВКА ДО ТСЦ", style = ZnakyType.caption, color = c.link)
+            Text("RUSHAI · ПІДГОТОВКА ДО ІСПИТУ", style = ZnakyType.caption, color = c.link)
             Text(
                 "Права —\nз першої спроби",
                 style = ZnakyType.largeTitle,
