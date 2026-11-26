@@ -51,7 +51,7 @@ import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.SportsMotorsports
 import androidx.compose.material.icons.rounded.SupportAgent
 import androidx.compose.material.icons.rounded.SwapHoriz
-import androidx.compose.material.icons.rounded.ThreeSixty
+import androidx.compose.material.icons.rounded.ViewInAr
 import androidx.compose.material.icons.rounded.TwoWheeler
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material.icons.rounded.Waves
@@ -302,7 +302,7 @@ private fun CourseHero(course: CourseData, doneCount: Int, next: CourseChapter?,
                     onClick = onContinue,
                     modifier = Modifier.weight(1f),
                 )
-                ZButton("3D", onClick = onOpenAnatomy, kind = ButtonKind.Tinted, icon = Icons.Rounded.ThreeSixty, contentDescription = "Будова в 3D")
+                ZButton("3D", onClick = onOpenAnatomy, kind = ButtonKind.Tinted, icon = Icons.Rounded.ViewInAr, contentDescription = "Будова в 3D")
             }
         }
     }
@@ -430,7 +430,7 @@ internal fun CourseLessonScreen(
                     }
                 }
                 if (step.scene == "boat_parts" || step.scene == "moto_check") {
-                    ZButton("Відкрити 3D-модель", onClick = { onOpenAnatomy(course.anatomy) }, kind = ButtonKind.Tinted, icon = Icons.Rounded.ThreeSixty, modifier = Modifier.fillMaxWidth())
+                    ZButton("Відкрити 3D-модель", onClick = { onOpenAnatomy(course.anatomy) }, kind = ButtonKind.Tinted, icon = Icons.Rounded.ViewInAr, modifier = Modifier.fillMaxWidth())
                 }
                 Spacer(Modifier.height(8.dp))
             }
