@@ -69,6 +69,7 @@ import com.znaky.core.domain.repository.QuestionRepository
 import com.znaky.core.domain.repository.SettingsRepository
 import com.znaky.core.model.ExamBlock
 import com.znaky.core.model.LicenseCategory
+import com.znaky.core.model.MOTO_TOPIC_PREFIX
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -156,8 +157,9 @@ private val SectionSigns = mapOf("12" to "3.29", "14" to "3.25", "15" to "3.34",
 @Composable
 private fun LearnHubScreen(state: LearnState?, onOpenSection: (HomeSection) -> Unit, onOpenTopic: (String) -> Unit) {
     val s = state ?: return LoadingBox()
+    if (s.category.isWater) return BoatLearnHub(s, onOpenSection, onOpenTopic)
     val c = ZnakyTheme.colors
-    val rules = s.route.filter { it.block == ExamBlock.TRAFFIC_RULES }
+    val rules = s.route.filter { it.block == ExamBlock.TRAFFIC_RULES && !it.id.startsWith(MOTO_TOPIC_PREFIX) }
     val here = rules.indexOfFirst { it.completion < LEARNED }
     LazyColumn(
         Modifier.fillMaxSize().background(c.background).statusBarsPadding(),
@@ -166,6 +168,9 @@ private fun LearnHubScreen(state: LearnState?, onOpenSection: (HomeSection) -> U
     ) {
         item(key = "title") {
             LargeTitle("Вчити", Modifier.padding(top = 16.dp), subtitle = "Уся офіційна програма теоретичного іспиту · ${s.category.name}")
+        }
+        if (s.category.isMoto) item(key = "course") {
+            CourseCard(ExtraCourse.MOTO, onOpenSection, Modifier.padding(horizontal = 16.dp))
         }
         item(key = "blocks") {
             val blocks = listOf(ExamBlock.TRAFFIC_RULES, ExamBlock.ROAD_SAFETY, ExamBlock.VEHICLE, ExamBlock.FIRST_AID)
@@ -222,6 +227,53 @@ private fun LearnHubScreen(state: LearnState?, onOpenSection: (HomeSection) -> U
     }
 }
 
+/** «Вчити» for the boat course: the course card, its topics and the glossary. */
+@Composable
+private fun BoatLearnHub(s: LearnState, onOpenSection: (HomeSection) -> Unit, onOpenTopic: (String) -> Unit) {
+    val c = ZnakyTheme.colors
+    val topics = s.route
+    val here = topics.indexOfFirst { it.completion < LEARNED }
+    LazyColumn(
+        Modifier.fillMaxSize().background(c.background).statusBarsPadding(),
+        contentPadding = PaddingValues(bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item(key = "title") {
+            LargeTitle("Вчити", Modifier.padding(top = 16.dp), subtitle = "Судноводій малого судна і гідроцикла")
+        }
+        item(key = "course") { CourseCard(ExtraCourse.BOAT, onOpenSection, Modifier.padding(horizontal = 16.dp)) }
+        item(key = "tiles") {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                RefTile("Словник", Modifier.weight(1f), { onOpenSection(HomeSection.GLOSSARY) }) {
+                    Text("Aa", style = ZnakyType.title.copy(fontSize = 26.sp), color = c.link)
+                }
+                RefTile("20 випадкових", Modifier.weight(1f), { onOpenSection(HomeSection.RANDOM) }) {
+                    Icon(Icons.Rounded.Shuffle, contentDescription = null, tint = c.link, modifier = Modifier.size(28.dp))
+                }
+                RefTile("Мої помилки", Modifier.weight(1f), { onOpenSection(HomeSection.MISTAKES) }) {
+                    Icon(Icons.Rounded.WarningAmber, contentDescription = null, tint = c.red, modifier = Modifier.size(28.dp))
+                }
+            }
+        }
+        item(key = "topicsTitle") {
+            Text(
+                "ТЕМИ · ${topics.size} ${plural(topics.size, "ТЕМА", "ТЕМИ", "ТЕМ")}",
+                style = ZnakyType.footnote,
+                color = c.textTertiary,
+                modifier = Modifier.padding(horizontal = 22.dp).padding(top = 6.dp).semantics { heading() },
+            )
+        }
+        item(key = "topics") {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp).clip(RoundedCornerShape(20.dp)).background(c.surface)) {
+                topics.forEachIndexed { i, topic ->
+                    if (i > 0) HorizontalDivider(Modifier.padding(start = 56.dp), thickness = 1.dp, color = c.separator)
+                    RuleRow(topic, isHere = i == here, onClick = { onOpenTopic(topic.id) }, showSign = false)
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun BlockCard(block: ExamBlock, completion: Float, modifier: Modifier, onClick: () -> Unit) {
     val c = ZnakyTheme.colors
@@ -264,7 +316,7 @@ private fun RefTile(label: String, modifier: Modifier, onClick: () -> Unit, art:
 }
 
 @Composable
-private fun RuleRow(topic: PlanTopic, isHere: Boolean, onClick: () -> Unit) {
+private fun RuleRow(topic: PlanTopic, isHere: Boolean, onClick: () -> Unit, showSign: Boolean = true) {
     val c = ZnakyTheme.colors
     val learned = topic.completion >= LEARNED
     Row(
@@ -278,7 +330,7 @@ private fun RuleRow(topic: PlanTopic, isHere: Boolean, onClick: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Text(topic.number, style = ZnakyType.footnote, color = c.textTertiary, modifier = Modifier.width(22.dp))
-        val sign = SectionSigns[topic.number]
+        val sign = if (showSign) SectionSigns[topic.number] else null
         Box(Modifier.size(30.dp), contentAlignment = Alignment.Center) {
             if (sign != null && RoadSigns.has(sign)) ArtImage(null, Modifier.size(30.dp)) { RoadSigns.draw(this, sign) }
             else Box(Modifier.size(26.dp).clip(CircleShape).background(c.surfaceMuted))

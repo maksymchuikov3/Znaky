@@ -59,6 +59,21 @@ class ArtRenderTest {
         }
     }
 
+    @Test fun courseScenesDrawAcrossTheLoop() {
+        CourseScenes.Kind.entries.forEach { kind ->
+            for (i in 0..10) assertTrue("$kind at ${i / 10f}", painted(358f, 250f) { CourseScenes.draw(it, kind, i / 10f, dark = i % 2 == 0) } > 0.05f)
+        }
+    }
+
+    @Test fun anatomyModelsRenderWithAMarkerPerPart() {
+        Anatomy3D.Kind.entries.forEach { kind ->
+            val model = Anatomy3D.build(kind) { 0xFF2F7DE1 }
+            assertTrue("$kind has ${model.anchors.size} markers", model.anchors.size >= 18)
+            val r = Car3D.Renderer(model.mesh)
+            for (yaw in 0 until 360 step 60) assertTrue("$kind at $yaw", painted(300f, 260f) { r.draw(it, yaw.toFloat(), -16f, Car3D.View.X_RAY, shellAlpha = 0.4f) } > 0.03f)
+        }
+    }
+
     @Test fun svgParserHandlesRelativeAndArcCommands() {
         val p = ArtPath.svg("M10 10 h20 v20 l-20 0 z m40 0 a10 10 0 0 1 20 0 q5 5 10 0 c1 1 2 2 3 3")
         val verbs = ArrayList<String>()

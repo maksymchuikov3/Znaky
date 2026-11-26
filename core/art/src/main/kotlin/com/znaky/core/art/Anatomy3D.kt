@@ -6,12 +6,12 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * 3D models for «Будова авто»: a car with an engine, an electric car and a motorcycle,
+ * 3D models for «Будова авто»: a car with an engine, an electric car, a motorcycle and a small motor boat,
  * each part a tagged shape so it can be highlighted and pointed at with a numbered marker.
  * Units and axes are the same as [Car3D]: +x forward, y up (ground at -42), z across.
  */
 object Anatomy3D {
-    enum class Kind { ICE, EV, MOTO }
+    enum class Kind { ICE, EV, MOTO, BOAT }
 
     /** [anchors]: where the numbered marker of each part sits, in model units. */
     class Model(val mesh: Car3D.Mesh, val anchors: Map<String, FloatArray>)
@@ -65,6 +65,7 @@ object Anatomy3D {
                 }
             }
             Kind.MOTO -> buildMoto(m, ::part, anchors, colorOf)
+            Kind.BOAT -> buildBoat(m, ::part, anchors, colorOf)
         }
         return Model(Car3D.Mesh(m.faces), anchors)
     }
@@ -134,5 +135,128 @@ object Anatomy3D {
         }
         m.extrude(dome, 8f, colorOf("helmet"), Part.INSIDE, "helmet") { colorOf("helmet") to Part.INSIDE }
         anchors["helmet"] = floatArrayOf(-26f, 39f, 0f)
+        // Rear shock: a slanted strut from the swingarm to the frame under the seat.
+        m.extrude(floatArrayOf(-28f, -10f, -24f, -10f, -14f, 16f, -18f, 16f), 2.2f, colorOf("rearShock"), Part.INSIDE, "rearShock") { colorOf("rearShock") to Part.INSIDE }
+        anchors["rearShock"] = floatArrayOf(-21f, 4f, 3f)
+        part("motoLights", 64f, 34f, 0f, 3f, 9f, 11f, true)
+        part("motoLights", -59f, 24f, 0f, 3f, 5f, 11f, false)
+        part("motoMirrors", 52f, 48f, 22f, 3f, 6f, 8f, true)
+        part("motoMirrors", 52f, 48f, -22f, 3f, 6f, 8f, false)
+        part("motoMirrors", 54f, 44f, 22f, 1.5f, 8f, 1.5f, false)
+        part("motoMirrors", 54f, 44f, -22f, 1.5f, 8f, 1.5f, false)
+        part("motoRadiator", 34f, -2f, 0f, 3f, 22f, 26f, true)
+        part("motoExhaust", -50f, -16f, 12f, 18f, 7f, 7f, true)
+        part("motoBattery", -24f, 12f, 0f, 10f, 8f, 10f, true)
+        part("stand", -6f, -30f, -12f, 3f, 22f, 3f, true)
+        part("pillion", -40f, 31f, 0f, 22f, 3f, 20f, true)
+        part("pillion", -36f, -6f, 14f, 6f, 2f, 6f, false)
+        part("pillion", -36f, -6f, -14f, 6f, 2f, 6f, false)
+    }
+
+    /** Hull half-beam, chine and sheer at station [x] (stern -96 … bow 108). */
+    private class Station(val x: Float, val beam: Float, val chineZ: Float, val chineY: Float, val keelY: Float, val sheer: Float)
+
+    private fun station(x: Float): Station {
+        // 0 at the transom, 1 at the stem.
+        val t = ((x + 96f) / 204f).coerceIn(0f, 1f)
+        val bow = ((t - 0.55f) / 0.45f).coerceIn(0f, 1f)
+        val beam = 34f * (1f - bow * bow * 0.97f)
+        val keel = -30f + 22f * bow * bow
+        val chineY = -22f + 16f * bow * bow
+        val sheer = 4f + 8f * bow * bow
+        return Station(x, beam, beam * 0.78f, chineY, keel, sheer)
+    }
+
+    private fun buildBoat(
+        m: Car3D.Builder,
+        part: (String, Float, Float, Float, Float, Float, Float, Boolean) -> Unit,
+        anchors: MutableMap<String, FloatArray>,
+        colorOf: (String) -> Long,
+    ) {
+        val hullColor = 0xFFF1F4F8
+        val inner = 0xFFCAD3DE
+        val stripe = 0xFF1C8DB8
+        val xs = floatArrayOf(-96f, -70f, -40f, -10f, 20f, 46f, 66f, 82f, 94f, 102f, 108f)
+        val st = xs.map { station(it) }
+        // Section points of one side from keel to gunwale; z mirrored by [side].
+        fun section(s: Station, side: Float) = listOf(
+            floatArrayOf(s.x, s.keelY, 0f),
+            floatArrayOf(s.x, s.chineY, side * s.chineZ),
+            floatArrayOf(s.x, s.sheer - 6f, side * s.beam),
+            floatArrayOf(s.x, s.sheer, side * s.beam * 0.98f),
+        )
+        fun quad(a: FloatArray, b: FloatArray, c: FloatArray, d: FloatArray, color: Long, outward: FloatArray, part: Part, tag: String?) {
+            val ux = b[0] - a[0]; val uy = b[1] - a[1]; val uz = b[2] - a[2]
+            val vx = d[0] - a[0]; val vy = d[1] - a[1]; val vz = d[2] - a[2]
+            var nx = uy * vz - uz * vy; var ny = uz * vx - ux * vz; var nz = ux * vy - uy * vx
+            val len = kotlin.math.sqrt(nx * nx + ny * ny + nz * nz).coerceAtLeast(1e-4f)
+            nx /= len; ny /= len; nz /= len
+            val flip = nx * outward[0] + ny * outward[1] + nz * outward[2] < 0
+            val pts = if (flip) listOf(a, d, c, b) else listOf(a, b, c, d)
+            val n = if (flip) floatArrayOf(-nx, -ny, -nz) else floatArrayOf(nx, ny, nz)
+            m.face(pts, n, color, part, tag)
+        }
+        for (side in floatArrayOf(1f, -1f)) {
+            for (i in 0 until st.size - 1) {
+                val a = section(st[i], side); val b = section(st[i + 1], side)
+                for (k in 0 until 3) {
+                    val color = if (k == 2) stripe else hullColor
+                    // Outward: away from the hull's centre line, a little downward below the chine.
+                    val out = floatArrayOf(0f, if (k == 0) -1f else -0.2f, side)
+                    quad(a[k], b[k], b[k + 1], a[k + 1], color, out, Part.BODY, "hull")
+                    // The inside of the topsides, seen from above through the open cockpit.
+                    if (k > 0) quad(a[k], b[k], b[k + 1], a[k + 1], inner, floatArrayOf(-out[0], -out[1], -out[2]).also { it[1] = 0.3f; it[2] = -side }, Part.TRIM, null)
+                }
+            }
+        }
+        anchors["hull"] = floatArrayOf(40f, -20f, 30f)
+        // Cockpit floor and foredeck.
+        m.box(-28f, -15f, 0f, 136f, 1.5f, 54f, 0xFFB7C4D2, Part.TRIM)
+        val fore = st.filter { it.x >= 66f }
+        m.face(fore.map { floatArrayOf(it.x, it.sheer, it.beam * 0.98f) } + fore.reversed().map { floatArrayOf(it.x, it.sheer, -it.beam * 0.98f) },
+            floatArrayOf(0f, 1f, 0f), 0xFFE3E9F0, Part.BODY)
+        // Transom: the flat stern plate carrying the motor.
+        part("transom", -95f, -12f, 0f, 3f, 32f, 62f, true)
+        anchors["transom"] = floatArrayOf(-95f, -2f, -24f)
+        // Outboard motor: cowling, leg and anti-cavitation plate; the propeller under it.
+        part("outboard", -104f, 16f, 0f, 18f, 20f, 15f, true)
+        part("outboard", -100f, 4f, 0f, 8f, 6f, 10f, false)
+        part("outboard", -103f, -14f, 0f, 6f, 36f, 5f, false)
+        part("outboard", -104f, -30f, 0f, 14f, 1.5f, 10f, false)
+        part("propeller", -104f, -36f, 0f, 9f, 5f, 4f, true)
+        part("propeller", -108f, -36f, 0f, 1.5f, 16f, 3f, false)
+        part("propeller", -108f, -36f, 0f, 1.5f, 3f, 16f, false)
+        // Centre console with a small windscreen.
+        part("console", 6f, -1f, -10f, 20f, 26f, 22f, true)
+        m.extrude(floatArrayOf(14f, 12f, 18f, 12f, 12f, 22f, 9f, 22f), 11f, 0xFF9FC7E0, Part.GLASS, zOffset = -10f) { 0xFF9FC7E0 to Part.GLASS }
+        part("killcord", 0f, 14f, -18f, 3f, 3f, 3f, true)
+        part("killcord", -2f, 13f, -18f, 3f, 1f, 1f, false)
+        part("throttle", 2f, 10f, 3f, 4f, 10f, 3f, true)
+        part("boatHorn", 14f, 13f, -2f, 4f, 3f, 5f, true)
+        part("navlights", 104f, 12f, 0f, 4f, 3f, 6f, true)
+        part("navlights", -82f, 18f, -26f, 1.5f, 36f, 1.5f, false)
+        part("navlights", -82f, 37f, -26f, 4f, 4f, 4f, false)
+        part("fueltank", -46f, -21f, 0f, 30f, 8f, 30f, true)
+        part("boatBattery", -78f, -9f, 20f, 12f, 10f, 10f, true)
+        part("bilge", -84f, -25f, 0f, 8f, 4f, 8f, true)
+        // A bench seat with the life jackets stowed under it.
+        m.box(-58f, -6f, 0f, 16f, 4f, 58f, 0xFFDDE3EA, Part.TRIM)
+        part("vests", -58f, -11f, 12f, 12f, 6f, 16f, true)
+        part("vests", -58f, -11f, -10f, 12f, 6f, 14f, false)
+        // Life ring hung on the side: eight short segments around a circle.
+        for (i in 0 until 8) {
+            val a = (2 * PI * i / 8).toFloat()
+            part("lifebuoy", -34f + 8f * cos(a), 0f + 8f * sin(a), -31f, 4f, 4f, 3f, false)
+        }
+        anchors["lifebuoy"] = floatArrayOf(-34f, 9f, -31f)
+        part("anchor", 84f, 0f, 0f, 10f, 4f, 12f, true)
+        part("anchor", 84f, 0f, 0f, 2f, 4f, 2f, false)
+        part("paddles", -14f, -10f, 26f, 64f, 2f, 3f, true)
+        part("paddles", 22f, -10f, 26f, 10f, 2f, 6f, false)
+        part("fireext", 20f, -7f, -20f, 5f, 14f, 5f, true)
+        // Registration number on the bow, standing just off the topside.
+        val sn = station(66f)
+        part("idnumber", 66f, sn.sheer - 9f, sn.beam * 0.95f + 1f, 28f, 5f, 1f, true)
+        part("idnumber", 66f, sn.sheer - 9f, -sn.beam * 0.95f - 1f, 28f, 5f, 1f, false)
     }
 }

@@ -269,7 +269,7 @@ internal fun ExplanationCard(question: Question, rules: Map<String, String>, cor
                 Box(Modifier.width(3.dp).fillMaxHeight().background(c.primary))
                 Text(
                     buildAnnotatedString {
-                        withStyle(SpanStyle(color = c.link, fontWeight = FontWeight.Bold)) { append("ПДР $point") }
+                        withStyle(SpanStyle(color = c.link, fontWeight = FontWeight.Bold)) { append(if (point.first().isDigit()) "ПДР $point" else point) }
                         if (clause != null) append(" — $clause")
                     },
                     style = ZnakyType.subhead,

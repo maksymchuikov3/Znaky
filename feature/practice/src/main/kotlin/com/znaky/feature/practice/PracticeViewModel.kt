@@ -11,6 +11,8 @@ import com.znaky.core.model.AnswerRecord
 import com.znaky.core.model.ExamBlock
 import com.znaky.core.model.Question
 import com.znaky.core.model.ReviewCard
+import com.znaky.core.model.BOAT_TOPIC_PREFIX
+import com.znaky.core.model.MOTO_TOPIC_PREFIX
 import com.znaky.core.model.Topic
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,9 +60,13 @@ internal fun ExamBlock.shortTitle() = when (this) {
     ExamBlock.FIRST_AID -> "Домедична допомога"
 }
 
-/** «Розділ 16 · Проїзд перехресть» for rule sections, «Будова авто · Гальма» otherwise. */
-internal fun Topic.label(): String =
-    if (number.toIntOrNull() != null) "Розділ $number · $title" else "${block.shortTitle()} · $title"
+/** «Розділ 16 · Проїзд перехресть» for rule sections, «Мото · …», «Судноводій · …» for the extra courses, «Будова авто · Гальма» otherwise. */
+internal fun Topic.label(): String = when {
+    id.startsWith(MOTO_TOPIC_PREFIX) -> "Мото · $title"
+    id.startsWith(BOAT_TOPIC_PREFIX) -> "Судноводій · $title"
+    number.toIntOrNull() != null -> "Розділ $number · $title"
+    else -> "${block.shortTitle()} · $title"
+}
 
 @HiltViewModel
 class PracticeViewModel @Inject constructor(

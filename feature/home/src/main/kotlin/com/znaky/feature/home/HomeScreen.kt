@@ -98,6 +98,11 @@ enum class HomeSection {
     ANATOMY,
     GLOSSARY,
     OFFICER,
+    /** Theory courses outside the car programme and their 3D models. */
+    MOTO_COURSE,
+    BOAT_COURSE,
+    ANATOMY_MOTO,
+    ANATOMY_BOAT,
 }
 
 fun NavGraphBuilder.homeScreen(
@@ -148,7 +153,7 @@ internal fun HomeScreen(
             contentPadding = PaddingValues(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            item(key = "header") { Header(state.streak, onStreak = { onOpenSection(HomeSection.PROGRESS) }) }
+            item(key = "header") { Header(state.streak, water = state.category.isWater, onStreak = { onOpenSection(HomeSection.PROGRESS) }) }
             item(key = "road") { RoadCard(state, onClick = { onOpenSection(HomeSection.PROGRESS) }) }
             item(key = "next") {
                 NextStopCard(
@@ -156,6 +161,12 @@ internal fun HomeScreen(
                     onGo = { topic -> if (topic != null) onOpenTopic(topic.id) else onOpenSection(HomeSection.EXAM_INTRO) },
                 )
             }
+            val course = when {
+                state.category.isWater -> ExtraCourse.BOAT
+                state.category.isMoto -> ExtraCourse.MOTO
+                else -> null
+            }
+            if (course != null) item(key = "course") { CourseCard(course, onOpenSection, Modifier.padding(horizontal = 16.dp)) }
             item(key = "chips") {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Chip(
@@ -169,7 +180,7 @@ internal fun HomeScreen(
                     )
                     Chip(
                         icon = Icons.Rounded.Timer,
-                        title = "Іспит як у ТСЦ",
+                        title = if (state.category.isWater) "Пробний іспит" else "Іспит як у ТСЦ",
                         subtitle = "20 питань · 20 хв",
                         bg = c.primaryTint,
                         fg = c.link,
@@ -183,13 +194,13 @@ internal fun HomeScreen(
 }
 
 @Composable
-private fun Header(streak: Int, onStreak: () -> Unit) {
+private fun Header(streak: Int, water: Boolean, onStreak: () -> Unit) {
     val c = ZnakyTheme.colors
     Row(
         Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("Шлях до ТСЦ", style = ZnakyType.largeTitle, color = c.textPrimary, modifier = Modifier.weight(1f).semantics { heading() })
+        Text(if (water) "Шлях до посвідчення" else "Шлях до ТСЦ", style = ZnakyType.largeTitle, color = c.textPrimary, modifier = Modifier.weight(1f).semantics { heading() })
         StreakPill(streak, onStreak)
     }
 }
@@ -216,13 +227,14 @@ private class Stop(val label: String, val icon: ImageVector, val done: Boolean)
 private fun stops(state: HomeUiState.Ready): List<Stop> {
     val b = state.blocks
     fun learned(block: ExamBlock) = (b[block] ?: 0f) >= LEARNED
+    val water = state.category.isWater
     return listOf(
-        Stop("Допомога", Icons.Rounded.MedicalServices, learned(ExamBlock.FIRST_AID)),
+        Stop(if (water) "Рятування" else "Допомога", Icons.Rounded.MedicalServices, learned(ExamBlock.FIRST_AID)),
         Stop("Правила", Icons.Rounded.Traffic, learned(ExamBlock.TRAFFIC_RULES)),
         Stop("Безпека", Icons.Rounded.Shield, learned(ExamBlock.ROAD_SAFETY)),
-        Stop("Будова", Icons.Rounded.Settings, learned(ExamBlock.VEHICLE)),
+        Stop(if (water) "Човен" else "Будова", Icons.Rounded.Settings, learned(ExamBlock.VEHICLE)),
         Stop("Пробні", Icons.Rounded.Timer, state.passedRecent >= 3),
-        Stop("ТСЦ", Icons.Rounded.Flag, state.readiness.level == Level.READY),
+        Stop(if (water) "Комісія" else "ТСЦ", Icons.Rounded.Flag, state.readiness.level == Level.READY),
     )
 }
 

@@ -56,6 +56,7 @@ import com.znaky.core.designsystem.theme.ZnakyTheme
 import com.znaky.core.designsystem.theme.ZnakyType
 import com.znaky.feature.car.AnatomyRoute
 import com.znaky.feature.car.CarHubRoute
+import com.znaky.feature.car.CourseRoute
 import com.znaky.feature.car.GlossaryRoute
 import com.znaky.feature.car.carScreens
 import com.znaky.feature.exam.ExamIntroRoute
@@ -148,6 +149,10 @@ fun ZnakyApp(appViewModel: AppViewModel = hiltViewModel()) {
                     HomeSection.ANATOMY -> navController.navigate(AnatomyRoute())
                     HomeSection.GLOSSARY -> navController.navigate(GlossaryRoute)
                     HomeSection.OFFICER -> navController.navigate(OfficerRoute)
+                    HomeSection.MOTO_COURSE -> navController.navigate(CourseRoute("moto"))
+                    HomeSection.BOAT_COURSE -> navController.navigate(CourseRoute("boat"))
+                    HomeSection.ANATOMY_MOTO -> navController.navigate(AnatomyRoute("moto"))
+                    HomeSection.ANATOMY_BOAT -> navController.navigate(AnatomyRoute("boat"))
                 }
             }
             val openTopic: (String) -> Unit = { navController.navigateToTopic(it) }
