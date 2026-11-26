@@ -5,12 +5,14 @@ import com.znaky.core.data.content.ContentPackValidator
 import com.znaky.core.database.dao.ContentDao
 import com.znaky.core.database.entity.ContentMetaEntity
 import com.znaky.core.domain.repository.QuestionRepository
+import com.znaky.core.domain.repository.SettingsRepository
 import com.znaky.core.model.LicenseCategory
 import com.znaky.core.model.Question
 import com.znaky.core.model.Topic
+import com.znaky.core.model.isFor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -22,14 +24,18 @@ import javax.inject.Singleton
 class OfflineQuestionRepository @Inject constructor(
     private val dao: ContentDao,
     private val loader: ContentPackLoader,
+    private val settings: SettingsRepository,
 ) : QuestionRepository {
     private val loadMutex = Mutex()
 
     @Volatile
     private var contentReady = false
 
+    /** Only the topics of the chosen category: a boat learner never sees road sections and vice versa. */
     override fun observeTopics(): Flow<List<Topic>> =
-        dao.observeTopics().map { rows -> rows.map { it.toModel() } }
+        combine(dao.observeTopics(), settings.licenseCategory) { rows, category ->
+            rows.map { it.toModel() }.filter { it.isFor(category) }
+        }
 
     override suspend fun getTopic(topicId: String): Topic? = dao.getTopic(topicId)?.toModel()
 

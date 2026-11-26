@@ -95,10 +95,10 @@ internal data class AnatomyData(val kinds: Map<String, AnatomyKind>, val parts: 
 
 private val json = Json { ignoreUnknownKeys = true }
 
-private val Kinds = listOf("ice" to Anatomy3D.Kind.ICE, "ev" to Anatomy3D.Kind.EV, "moto" to Anatomy3D.Kind.MOTO)
+private val Kinds = listOf("ice" to Anatomy3D.Kind.ICE, "ev" to Anatomy3D.Kind.EV, "moto" to Anatomy3D.Kind.MOTO, "boat" to Anatomy3D.Kind.BOAT)
 
 @Composable
-internal fun AnatomyScreen(startKind: String, onBack: () -> Unit, onOpenLessons: () -> Unit) {
+internal fun AnatomyScreen(startKind: String, onBack: () -> Unit, onOpenLessons: (kind: String) -> Unit) {
     val context = LocalContext.current
     val data by produceState<AnatomyData?>(null) {
         value = withContext(Dispatchers.IO) {
@@ -113,7 +113,7 @@ internal fun AnatomyScreen(startKind: String, onBack: () -> Unit, onOpenLessons:
     val d = data
     Column(Modifier.fillMaxSize().background(c.background).statusBarsPadding()) {
         TopBar(onBack = onBack) {
-            Text(
+            if (Kinds[kindIndex].first != "boat") Text(
                 "4 з 20 на іспиті",
                 style = ZnakyType.footnote,
                 color = c.onPrimaryTint,
@@ -139,11 +139,11 @@ internal fun AnatomyScreen(startKind: String, onBack: () -> Unit, onOpenLessons:
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item(key = "title") {
-                Text("Будова авто", style = ZnakyType.largeTitle, color = c.textPrimary, modifier = Modifier.padding(horizontal = 20.dp))
+                Text(when (Kinds[kindIndex].first) { "moto" -> "Будова мотоцикла"; "boat" -> "Будова катера"; else -> "Будова авто" }, style = ZnakyType.largeTitle, color = c.textPrimary, modifier = Modifier.padding(horizontal = 20.dp))
             }
             item(key = "kinds") {
                 SegmentedControl(
-                    listOf("Звичайне авто", "Електромобіль", "Мотоцикл"),
+                    listOf("Авто", "Електро", "Мото", "Човен"),
                     selectedIndex = kindIndex,
                     onSelect = { kindIndex = it },
                     modifier = Modifier.padding(horizontal = 16.dp),
@@ -173,13 +173,13 @@ internal fun AnatomyScreen(startKind: String, onBack: () -> Unit, onOpenLessons:
                         .padding(horizontal = 16.dp)
                         .clip(RoundedCornerShape(18.dp))
                         .background(c.primaryTint)
-                        .clickable(onClick = onOpenLessons)
+                        .clickable { onOpenLessons(kindKey) }
                         .padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Icon(Icons.Rounded.School, contentDescription = null, tint = c.link)
-                    Text("3D-уроки: як працюють двигун, гальма і батарея", style = ZnakyType.bodyStrong, color = c.onPrimaryTint, modifier = Modifier.weight(1f))
+                    Text(when (kindKey) { "moto" -> "Курс «Мотоцикл»: екіпіровка, швидкість, пасажир"; "boat" -> "Курс «Судноводій»: правила плавання і безпека"; else -> "3D-уроки: як працюють двигун, гальма і батарея" }, style = ZnakyType.bodyStrong, color = c.onPrimaryTint, modifier = Modifier.weight(1f))
                 }
             }
         }
@@ -203,7 +203,7 @@ private fun ModelView(kind: Anatomy3D.Kind, ids: List<String>, parts: Map<String
     var dragging by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val pitch = -16f
-    val shellAlpha = if (kind == Anatomy3D.Kind.MOTO) 0.9f else 0.22f
+    val shellAlpha = when (kind) { Anatomy3D.Kind.MOTO -> 0.9f; Anatomy3D.Kind.BOAT -> 0.4f; else -> 0.22f }
     LaunchedEffect(dragging, selected) {
         if (dragging || selected != null) return@LaunchedEffect
         while (isActive) {

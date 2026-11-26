@@ -7,7 +7,9 @@ import com.znaky.core.domain.progress.streakLength
 import com.znaky.core.domain.readiness.ReadinessCalculator
 import com.znaky.core.domain.repository.ProgressRepository
 import com.znaky.core.domain.repository.QuestionRepository
+import com.znaky.core.domain.repository.SettingsRepository
 import com.znaky.core.model.ExamBlock
+import com.znaky.core.model.LicenseCategory
 import com.znaky.core.model.Topic
 import com.znaky.core.model.TopicProgress
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -86,6 +88,7 @@ sealed interface HomeUiState {
         val mistakes: Int,
         val dueForReview: Int,
         val streak: Int,
+        val category: LicenseCategory = LicenseCategory.B,
     ) : HomeUiState
 }
 
@@ -94,6 +97,7 @@ class HomeViewModel @Inject constructor(
     questions: QuestionRepository,
     progress: ProgressRepository,
     calculator: ReadinessCalculator,
+    settings: SettingsRepository,
 ) : ViewModel() {
     private val contentState = MutableStateFlow<Boolean?>(null)
     private val today = LocalDate.now().toEpochDay()
@@ -121,7 +125,7 @@ class HomeViewModel @Inject constructor(
         progress.observeActiveDays(today - 60),
     ) { due, mistakes, activeDays -> Triple(due.size, mistakes.size, streakLength(activeDays, today)) }
 
-    val uiState: StateFlow<HomeUiState> = combine(contentState, study, daily) { loaded, s, d ->
+    val uiState: StateFlow<HomeUiState> = combine(contentState, study, daily, settings.licenseCategory) { loaded, s, d, category ->
         when (loaded) {
             null -> HomeUiState.Loading
             false -> HomeUiState.ContentError
@@ -134,6 +138,7 @@ class HomeViewModel @Inject constructor(
                 dueForReview = d.first,
                 mistakes = d.second,
                 streak = d.third,
+                category = category,
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState.Loading)

@@ -67,18 +67,18 @@ jobs:
           ./gradlew :app:assembleRelease --stacktrace \
             -PversionCode=${{ steps.ver.outputs.code }} \
             -PversionName=${{ steps.ver.outputs.name }}
-          cp app/build/outputs/apk/release/*.apk "znaky-${{ steps.ver.outputs.name }}.apk"
+          cp app/build/outputs/apk/release/*.apk "rushai-${{ steps.ver.outputs.name }}.apk"
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
-          name: Знаки ${{ steps.ver.outputs.name }}
+          name: Rushai ${{ steps.ver.outputs.name }}
           target_commitish: ${{ github.sha }}
           generate_release_notes: true
           body: |
-            Завантажте `znaky-${{ steps.ver.outputs.name }}.apk` нижче і відкрийте його на телефоні.
+            Завантажте `rushai-${{ steps.ver.outputs.name }}.apk` нижче і відкрийте його на телефоні.
             Нова версія встановлюється поверх попередньої, дані зберігаються.
           prerelease: false
           make_latest: true
-          files: znaky-${{ steps.ver.outputs.name }}.apk
+          files: rushai-${{ steps.ver.outputs.name }}.apk

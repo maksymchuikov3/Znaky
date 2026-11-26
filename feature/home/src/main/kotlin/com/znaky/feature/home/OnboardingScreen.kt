@@ -37,6 +37,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBackIos
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.DirectionsBoat
 import androidx.compose.material.icons.rounded.DirectionsCar
 import androidx.compose.material.icons.rounded.ElectricMoped
 import androidx.compose.material.icons.rounded.LocalShipping
@@ -145,7 +146,7 @@ private fun Welcome(onStart: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("ЗНАКИ · ПІДГОТОВКА ДО ТСЦ", style = ZnakyType.caption, color = c.link)
+            Text("RUSHAI · ПІДГОТОВКА ДО ІСПИТУ", style = ZnakyType.caption, color = c.link)
             Text(
                 "Права —\nз першої спроби",
                 style = ZnakyType.largeTitle,
@@ -338,18 +339,17 @@ private class CategoryOption(val category: LicenseCategory?, val code: String, v
 @Composable
 private fun CategoryStep(selected: LicenseCategory, onSelect: (LicenseCategory) -> Unit) {
     val c = ZnakyTheme.colors
-    StepTitle("На яку категорію вчишся?", "Покажемо лише питання твоєї категорії")
+    StepTitle("Що будеш водити?", "Покажемо теорію і питання саме для тебе")
     val options = listOf(
         CategoryOption(LicenseCategory.B, "B", "Легковий автомобіль", Icons.Rounded.DirectionsCar, Color(0xFF2F62C9)),
         CategoryOption(LicenseCategory.A, "A", "Мотоцикл", Icons.Rounded.TwoWheeler, Color(0xFFE07A2E)),
         CategoryOption(LicenseCategory.A1, "A1", "Мопед, скутер", Icons.Rounded.ElectricMoped, Color(0xFF2FA66A)),
-        CategoryOption(null, "C · D · BE…", "Згодом", Icons.Rounded.LocalShipping, c.textTertiary),
+        CategoryOption(LicenseCategory.BOAT, "Човен", "Катер, гідроцикл", Icons.Rounded.DirectionsBoat, Color(0xFF1C8DB8)),
     )
     options.chunked(2).forEach { row ->
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             row.forEach { option ->
                 val isSelected = option.category == selected
-                val enabled = option.category != null
                 Box(
                     Modifier
                         .weight(1f)
@@ -357,27 +357,36 @@ private fun CategoryStep(selected: LicenseCategory, onSelect: (LicenseCategory) 
                         .clip(RoundedCornerShape(22.dp))
                         .background(if (isSelected) c.primaryTint else c.surface)
                         .border(if (isSelected) 2.dp else 0.dp, if (isSelected) c.primary else Color.Transparent, RoundedCornerShape(22.dp))
-                        .selectable(selected = isSelected, enabled = enabled, role = Role.RadioButton, onClick = { option.category?.let(onSelect) })
+                        .selectable(selected = isSelected, role = Role.RadioButton, onClick = { option.category?.let(onSelect) })
                         .padding(14.dp),
                 ) {
-                    Icon(
-                        option.icon,
-                        contentDescription = null,
-                        tint = if (enabled) option.tint else c.surfaceMuted,
-                        modifier = Modifier.size(64.dp).align(Alignment.TopCenter),
-                    )
+                    Icon(option.icon, contentDescription = null, tint = option.tint, modifier = Modifier.size(64.dp).align(Alignment.TopCenter))
                     if (isSelected) {
                         Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = c.primary, modifier = Modifier.size(24.dp).align(Alignment.TopEnd))
                     }
                     Column(Modifier.align(Alignment.BottomStart)) {
-                        Text(option.code, style = ZnakyType.title, color = if (enabled) c.textPrimary else c.textTertiary, maxLines = 1)
+                        Text(option.code, style = ZnakyType.title, color = c.textPrimary, maxLines = 1)
                         Text(option.label, style = ZnakyType.footnote.copy(fontWeight = FontWeight.Normal), color = c.textTertiary, maxLines = 1)
                     }
                 }
             }
         }
     }
-    InfoNote("Іспит у ТСЦ для кожної категорії: 20 питань, 20 хвилин, не більше 2 помилок")
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.surface).padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(Icons.Rounded.LocalShipping, contentDescription = null, tint = c.textTertiary, modifier = Modifier.size(22.dp))
+        Text("C · D · BE…", style = ZnakyType.bodyStrong, color = c.textTertiary, modifier = Modifier.weight(1f))
+        Text("згодом", style = ZnakyType.footnote, color = c.textTertiary)
+    }
+    InfoNote(
+        when {
+            selected.isWater -> "Іспит на судноводія складають у кваліфікаційній комісії Адміністрації судноплавства, з 18 років"
+            else -> "Іспит у ТСЦ для кожної категорії: 20 питань, 20 хвилин, не більше 2 помилок"
+        },
+    )
 }
 
 @Composable
@@ -399,7 +408,7 @@ private val MonthNames = listOf("СІЧЕНЬ", "ЛЮТИЙ", "БЕРЕЗЕНЬ"
 private fun DateStep(horizon: ExamHorizon, onSelect: (ExamHorizon) -> Unit) {
     val c = ZnakyTheme.colors
     DateScene(horizon)
-    StepTitle("Коли іспит у ТСЦ?", "Складемо план так, щоб ти встиг усе")
+    StepTitle("Коли іспит?", "Складемо план так, щоб ти встиг усе")
     ExamHorizon.entries.chunked(2).forEach { row ->
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             row.forEach { h ->

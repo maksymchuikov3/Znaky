@@ -46,6 +46,7 @@ internal enum class TermCategory(val label: String, val color: Color) {
     SAFETY("Безпека", Color(0xFFD93A4C)),
     ELECTRIC("Електро", Color(0xFF14A06B)),
     MOTO("Мото", Color(0xFF7A4BE0)),
+    WATER("Вода", Color(0xFF1C8DB8)),
 }
 
 internal data class GlossaryTerm(
@@ -78,7 +79,7 @@ internal fun filterGlossary(terms: List<GlossaryTerm>, category: TermCategory?, 
         )
 }
 
-/** «Словник водія»: ПДР definitions and car, safety, EV and motorcycle terms in plain words. */
+/** «Словник водія»: ПДР definitions and car, safety, EV, motorcycle and boat terms in plain words. */
 @Composable
 internal fun GlossaryScreen(onBack: () -> Unit) {
     val c = ZnakyTheme.colors
@@ -93,10 +94,10 @@ internal fun GlossaryScreen(onBack: () -> Unit) {
     LazyColumn(Modifier.fillMaxSize().background(c.background).statusBarsPadding()) {
         item(key = "top") { TopBar(onBack = onBack, backLabel = "Будова авто") }
         item(key = "title") {
-            LargeTitle("Словник водія", subtitle = "Терміни з ПДР і будови авто простими словами")
+            LargeTitle("Словник водія", subtitle = "ПДР, будова авто, мото і вода простими словами")
         }
         item(key = "search") {
-            SearchField(query, { query = it }, "Пошук: кліренс, ABS, обгін…", Modifier.padding(top = 14.dp))
+            SearchField(query, { query = it }, "Пошук: кліренс, ABS, транець…", Modifier.padding(top = 14.dp))
         }
         item(key = "chips") {
             Row(
