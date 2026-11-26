@@ -12,10 +12,10 @@ data class ContentPack(
     val version: Int,
     /** Edition of the road rules the pack is based on, shown to the user. */
     val rulesEdition: String,
-    /** Rule point ("12.4") to the text of that clause, quoted under explanations. */
-    val rules: Map<String, String> = emptyMap(),
     val topics: List<TopicDto>,
     val questions: List<QuestionDto>,
+    /** Rule point ("12.4") to the text of that clause, quoted under explanations. */
+    val rules: Map<String, String> = emptyMap(),
 )
 
 @Serializable
