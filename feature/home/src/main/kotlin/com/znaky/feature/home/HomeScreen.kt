@@ -24,7 +24,6 @@ import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.EmojiEvents
-import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Quiz
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.Icon
@@ -149,7 +148,7 @@ internal fun HomeScreen(
                 contentPadding = PaddingValues(bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                item(key = "header") { Header(state, onStreak = { onOpenSection(HomeSection.PROGRESS) }) }
+                item(key = "header") { Header(state) }
                 item(key = "current") {
                     if (current != null) CurrentChapter(current, state.current + 1, state.chapters.size, onOpenTopic)
                     else BookDone(onExam = { onOpenSection(HomeSection.EXAM_INTRO) })
@@ -200,14 +199,12 @@ internal fun HomeScreen(
 }
 
 @Composable
-private fun Header(state: HomeUiState.Ready, onStreak: () -> Unit) {
+private fun Header(state: HomeUiState.Ready) {
     val c = ZnakyTheme.colors
     val total = state.chapters.size
     Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Мій підручник", style = ZnakyType.largeTitle, color = c.textPrimary, modifier = Modifier.weight(1f).semantics { heading() })
-            StreakPill(state.streak, onStreak)
-        }
+        // Streak, readiness and exam results live on «Прогрес»; home only says where you are in the book.
+        Text("Мій підручник", style = ZnakyType.largeTitle, color = c.textPrimary, modifier = Modifier.semantics { heading() })
         Text("Пройдено ${state.doneCount} з $total ${chaptersWord(total)}", style = ZnakyType.callout, color = c.textSecondary)
         LinearBar(if (total == 0) 0f else state.doneCount / total.toFloat(), Modifier.padding(end = 4.dp, top = 2.dp), color = c.success)
     }
@@ -376,23 +373,6 @@ private fun LinkRow(icon: ImageVector, tint: Color, tintBg: Color, title: String
             Text(subtitle, style = ZnakyType.subhead, color = c.textSecondary)
         }
         Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = c.textTertiary)
-    }
-}
-
-@Composable
-internal fun StreakPill(streak: Int, onClick: (() -> Unit)? = null) {
-    val c = ZnakyTheme.colors
-    Row(
-        Modifier
-            .clip(CircleShape)
-            .background(c.accentTint)
-            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .clearAndSetSemantics { contentDescription = "Серія: $streak ${daysWord(streak)} поспіль" },
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(Icons.Rounded.LocalFireDepartment, contentDescription = null, tint = c.accent, modifier = Modifier.size(16.dp))
-        Text(" $streak ${daysWord(streak)}", style = ZnakyType.footnote, color = c.onAccentTint)
     }
 }
 

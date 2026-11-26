@@ -70,7 +70,7 @@ class StatsViewModel @Inject constructor(
         val weak = topicProgress
             .filter { it.totalQuestions > 0 && it.completion < 0.9f }
             .sortedBy { it.completion }
-            .take(3)
+            .take(5)
             .map { WeakTopic(it.topicId, titles[it.topicId] ?: it.topicId, it.completion) }
 
         val byId = topicProgress.associateBy { it.topicId }
