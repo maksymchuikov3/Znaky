@@ -60,7 +60,7 @@ import kotlinx.coroutines.launch
 
 /** «3D-машина»: a rotatable car with x-ray and scheme views, and the list of topics. */
 @Composable
-internal fun CarHubScreen(onBack: () -> Unit, onOpenTopic: (id: String, step: Int) -> Unit) {
+internal fun CarHubScreen(onBack: () -> Unit, onOpenTopic: (id: String, step: Int) -> Unit, onOpenGlossary: () -> Unit) {
     val c = ZnakyTheme.colors
     var kindIndex by rememberSaveable { mutableIntStateOf(0) }
     var viewIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -108,6 +108,17 @@ internal fun CarHubScreen(onBack: () -> Unit, onOpenTopic: (id: String, step: In
                         leading = { Box(Modifier.size(10.dp).clip(RoundedCornerShape(5.dp)).background(group.color)) },
                     )
                 }
+            }
+        }
+        item(key = "glossary") {
+            GroupedList(Modifier.padding(horizontal = 16.dp), header = "Словник") {
+                ListRow(
+                    "Словник водія",
+                    subtitle = "${termsCount(GlossaryTerms.size)}: від кліренсу до ABS",
+                    showDivider = false,
+                    onClick = onOpenGlossary,
+                    leading = { Box(Modifier.size(10.dp).clip(RoundedCornerShape(5.dp)).background(TermCategory.PDR.color)) },
+                )
             }
         }
         item(key = "note") {
