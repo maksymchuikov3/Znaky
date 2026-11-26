@@ -26,6 +26,9 @@ object ContentPackValidator {
             if (q.answers.none { it.id == q.correctAnswerId }) add("Question ${q.id}: correct answer not in answers")
             if (q.categories.isEmpty()) add("Question ${q.id}: no licence categories")
             q.categories.filter { it !in categories }.forEach { add("Question ${q.id}: unknown category $it") }
+            if (pack.rules.isNotEmpty()) {
+                q.ruleRefs.filter { it !in pack.rules }.forEach { add("Question ${q.id}: rule $it has no clause text") }
+            }
         }
     }
 }

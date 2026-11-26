@@ -1,6 +1,17 @@
 package com.znaky.feature.stats
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -39,12 +50,9 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
-import com.znaky.core.designsystem.component.GroupedList
 import com.znaky.core.designsystem.component.LargeTitle
 import com.znaky.core.designsystem.component.LinearBar
-import com.znaky.core.designsystem.component.ListRow
 import com.znaky.core.designsystem.component.LoadingBox
-import com.znaky.core.designsystem.component.Pill
 import com.znaky.core.designsystem.component.ProgressRing
 import com.znaky.core.designsystem.component.ZCard
 import com.znaky.core.designsystem.theme.ZnakyTheme
@@ -71,40 +79,99 @@ internal fun StatsScreen(onTrainTopic: (String) -> Unit, viewModel: StatsViewMod
         contentPadding = PaddingValues(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        item(key = "title") { LargeTitle("Прогрес", Modifier.padding(top = 16.dp)) }
-        item(key = "readiness") {
-            ZCard(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    ProgressRing(s.readiness.score / 100f, size = 84.dp, stroke = 10.dp) {
-                        Text("${s.readiness.score}%", style = ZnakyType.title2, color = c.textPrimary)
-                    }
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Готовність", style = ZnakyType.headline, color = c.textPrimary)
-                        Text("Вивчено питань", style = ZnakyType.footnote, color = c.textTertiary)
-                        LinearBar(s.readiness.topicCoverage, color = c.success)
-                        Text("Пробних іспитів: ${s.readiness.examsTaken}", style = ZnakyType.footnote, color = c.textTertiary)
-                    }
+        item(key = "title") {
+            Row(Modifier.fillMaxWidth().padding(top = 16.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                LargeTitle("Прогрес", Modifier.weight(1f))
+                Row(
+                    Modifier.clip(CircleShape).background(c.accentTint).padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Rounded.LocalFireDepartment, contentDescription = null, tint = c.accent, modifier = Modifier.size(16.dp))
+                    Text(" ${s.streak} дн.", style = ZnakyType.footnote, color = c.onAccentTint)
                 }
             }
         }
+        item(key = "readiness") { ReadinessCard(s) }
         item(key = "week") { WeekCard(s) }
-        item(key = "exams") { ExamsChart(s.recentExams) }
-        if (s.weakTopics.isNotEmpty()) {
-            item(key = "weak") {
-                GroupedList(Modifier.padding(horizontal = 16.dp), header = "Варто підтягнути") {
-                    s.weakTopics.forEachIndexed { i, t ->
-                        ListRow(
-                            title = t.title,
-                            subtitle = "Вивчено ${(t.completion * 100).toInt()}%",
-                            showDivider = i > 0,
-                            showChevron = false,
-                            onClick = { onTrainTopic(t.id) },
-                            trailing = { Pill("Тренувати") },
-                        )
-                    }
+        item(key = "topicsTitle") {
+            Text(
+                "ЗА ТЕМАМИ · СПЕРШУ СЛАБКІ",
+                style = ZnakyType.footnote,
+                color = c.textTertiary,
+                modifier = Modifier.padding(horizontal = 22.dp).semantics { heading() },
+            )
+        }
+        item(key = "topics") {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp).clip(RoundedCornerShape(20.dp)).background(c.surface)) {
+                s.topics.forEachIndexed { i, t ->
+                    if (i > 0) HorizontalDivider(Modifier.padding(start = 48.dp), thickness = 1.dp, color = c.separator)
+                    TopicLevelRow(t, onClick = { onTrainTopic(t.id) })
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun levelOf(completion: Float): Pair<String, Color> {
+    val c = ZnakyTheme.colors
+    return when {
+        completion < 0.7f -> "СЛАБКО" to c.error
+        completion < 0.85f -> "СЕРЕДНЬО" to c.orange
+        completion < 0.95f -> "ДОБРЕ" to c.success
+        else -> "ВИВЧЕНО" to c.success
+    }
+}
+
+@Composable
+private fun TopicLevelRow(t: TopicRow, onClick: () -> Unit) {
+    val c = ZnakyTheme.colors
+    val (label, color) = levelOf(t.completion)
+    val bar = when (label) {
+        "СЛАБКО" -> c.error
+        "СЕРЕДНЬО" -> c.accent
+        else -> c.success
+    }
+    Row(
+        Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick).padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(t.number, style = ZnakyType.footnote, color = c.textTertiary, modifier = Modifier.width(24.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(t.title, style = ZnakyType.bodyStrong, color = c.textPrimary, maxLines = 1)
+            LinearBar(t.completion, Modifier.fillMaxWidth(), height = 5.dp, color = bar)
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text("${(t.completion * 100).toInt()}%", style = ZnakyType.bodyStrong, color = c.textPrimary)
+            Text(label, style = ZnakyType.caption.copy(fontSize = 10.sp), color = color)
+        }
+    }
+}
+
+@Composable
+private fun ReadinessCard(s: StatsUiState) {
+    val c = ZnakyTheme.colors
+    val left = (3 - s.passedInARow).coerceAtLeast(0)
+    ZCard(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            ProgressRing(s.readiness.score / 100f, size = 84.dp, stroke = 10.dp, color = c.success) {
+                Text("${s.readiness.score}%", style = ZnakyType.title2, color = c.textPrimary)
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Готовність до ТСЦ", style = ZnakyType.headline, color = c.textPrimary)
+                Text(
+                    when {
+                        s.lastExamsCount == 0 -> "Пройдіть пробний іспит: 3 поспіль без >2 помилок — і ти готовий."
+                        left == 0 -> "Пробні: ${s.passedOfLast5} з останніх ${s.lastExamsCount} складено. Ти готовий до ТСЦ!"
+                        else -> "Пробні: ${s.passedOfLast5} з останніх ${s.lastExamsCount} складено. Ще $left поспіль без >2 помилок — і ти готовий."
+                    },
+                    style = ZnakyType.footnote.copy(fontWeight = FontWeight.Normal),
+                    color = c.textSecondary,
+                )
+            }
+        }
+        ExamsChart(s.recentExams)
     }
 }
 
@@ -141,38 +208,48 @@ private fun WeekCard(s: StatsUiState) {
 @Composable
 private fun ExamsChart(exams: List<ExamResult>) {
     val c = ZnakyTheme.colors
-    ZCard(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-        Text("Пробні іспити", style = ZnakyType.headline, color = c.textPrimary)
-        if (exams.isEmpty()) {
-            Text("Ви ще не проходили пробний іспит.", style = ZnakyType.subhead, color = c.textSecondary, modifier = Modifier.padding(top = 8.dp))
-            return@ZCard
+    Row(Modifier.fillMaxWidth().padding(top = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text("ПРОБНІ ІСПИТИ", style = ZnakyType.caption, color = c.textTertiary, modifier = Modifier.weight(1f))
+        Text("прохідний 18/20", style = ZnakyType.caption, color = c.textTertiary)
+    }
+    if (exams.isEmpty()) {
+        Text("Ви ще не проходили пробний іспит.", style = ZnakyType.subhead, color = c.textSecondary, modifier = Modifier.padding(top = 8.dp))
+        return
+    }
+    val success = c.success
+    val idle = c.surfaceMuted
+    val line = c.textTertiary
+    val labelColor = c.textSecondary
+    val measurer = rememberTextMeasurer()
+    val labelStyle = ZnakyType.caption
+    Canvas(
+        Modifier
+            .fillMaxWidth()
+            .height(110.dp)
+            .padding(top = 8.dp)
+            .semantics { contentDescription = "Результати пробних іспитів: " + exams.joinToString { "${it.correctAnswers} з ${it.totalQuestions}" } },
+    ) {
+        val slots = 8
+        val gap = 10.dp.toPx()
+        val top = 16.dp.toPx()
+        val chartH = size.height - top
+        val barW = (size.width - gap * (slots - 1)) / slots
+        // Bars show 10..20 correct answers so the differences near the threshold are visible.
+        fun yOf(score: Float) = top + chartH * (1f - ((score - 10f) / 10f).coerceIn(0.04f, 1f))
+        exams.forEachIndexed { i, e ->
+            val score = e.correctAnswers * 20f / e.totalQuestions.coerceAtLeast(1)
+            val y = yOf(score)
+            val x = i * (barW + gap)
+            drawRoundRect(
+                color = if (e.passed) success else idle,
+                topLeft = Offset(x, y),
+                size = Size(barW, size.height - y),
+                cornerRadius = CornerRadius(6.dp.toPx()),
+            )
+            val text = measurer.measure("${e.correctAnswers}", labelStyle)
+            drawText(text, color = labelColor, topLeft = Offset(x + (barW - text.size.width) / 2, y - text.size.height - 1.dp.toPx()))
         }
-        Text("Прохідний поріг: 18 з 20", style = ZnakyType.footnote, color = c.textTertiary)
-        val success = c.success
-        val error = c.error
-        val line = c.textTertiary
-        Canvas(
-            Modifier
-                .fillMaxWidth()
-                .height(140.dp)
-                .padding(top = 12.dp)
-                .semantics { contentDescription = "Результати: " + exams.joinToString { "${it.correctAnswers} з ${it.totalQuestions}" } },
-        ) {
-            val slots = 8
-            val gap = 10.dp.toPx()
-            val barW = (size.width - gap * (slots - 1)) / slots
-            exams.forEachIndexed { i, e ->
-                val ratio = e.correctAnswers.toFloat() / e.totalQuestions.coerceAtLeast(1)
-                val h = size.height * ratio.coerceAtLeast(0.04f)
-                drawRoundRect(
-                    color = if (e.passed) success else error,
-                    topLeft = Offset(i * (barW + gap), size.height - h),
-                    size = Size(barW, h),
-                    cornerRadius = CornerRadius(6.dp.toPx()),
-                )
-            }
-            val y = size.height * (1 - 18f / 20f)
-            drawLine(line, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f)))
-        }
+        val y = yOf(18f)
+        drawLine(line, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f)))
     }
 }

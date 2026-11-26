@@ -44,10 +44,19 @@ class OfflineQuestionRepository @Inject constructor(
     override suspend fun getQuestionPool(category: LicenseCategory): List<Question> =
         dao.getQuestionsForCategory(category.name).map { it.toModel() }
 
+    @Volatile
+    private var ruleClauses: Map<String, String>? = null
+
+    override suspend fun getRuleClauses(): Map<String, String> =
+        ruleClauses ?: withContext(Dispatchers.IO) {
+            runCatching { loader.loadBundled().rules }.getOrDefault(emptyMap())
+        }.also { ruleClauses = it }
+
     override suspend fun ensureContentLoaded() = loadMutex.withLock {
         if (contentReady) return@withLock
         withContext(Dispatchers.IO) {
             val pack = loader.loadBundled()
+            ruleClauses = pack.rules
             val stored = dao.getMeta()
             if (stored != null && stored.version >= pack.version) return@withContext
 

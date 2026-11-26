@@ -16,6 +16,9 @@ interface QuestionRepository {
 
     suspend fun getQuestionPool(category: LicenseCategory): List<Question>
 
+    /** Rule point ("12.4") to its clause text, quoted under explanations. */
+    suspend fun getRuleClauses(): Map<String, String>
+
     /** Loads bundled content into local storage if it is missing or outdated. */
     suspend fun ensureContentLoaded()
 }

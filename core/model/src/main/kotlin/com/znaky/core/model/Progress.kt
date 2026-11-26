@@ -18,7 +18,10 @@ data class ReviewCard(
 ) {
     companion object {
         const val MIN_BOX = 1
-        const val MAX_BOX = 5
+        const val MAX_BOX = 6
+
+        /** Intervals in days of boxes 2..5 shown on the repetition track; box 6 means learned. */
+        val TRACK_DAYS = listOf(1, 3, 7, 14)
     }
 }
 

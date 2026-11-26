@@ -10,6 +10,9 @@ import kotlinx.serialization.Serializable
 @Serializable data class CarTopicRoute(val id: String, val step: Int = 0)
 @Serializable data object GlossaryRoute
 
+/** «Будова авто»: [kind] is ice, ev or moto. */
+@Serializable data class AnatomyRoute(val kind: String = "ice")
+
 fun NavGraphBuilder.carScreens(navController: NavController, onTrainTopic: (topicId: String) -> Unit) {
     val back: () -> Unit = { navController.popBackStack() }
     composable<CarHubRoute> {
@@ -24,4 +27,7 @@ fun NavGraphBuilder.carScreens(navController: NavController, onTrainTopic: (topi
         CarTopicScreen(route.id, route.step, onBack = back, onTrain = onTrainTopic)
     }
     composable<GlossaryRoute> { GlossaryScreen(onBack = back) }
+    composable<AnatomyRoute> { entry ->
+        AnatomyScreen(entry.toRoute<AnatomyRoute>().kind, onBack = back, onOpenLessons = { navController.navigate(CarHubRoute) })
+    }
 }

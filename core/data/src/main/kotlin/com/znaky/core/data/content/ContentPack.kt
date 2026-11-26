@@ -14,6 +14,8 @@ data class ContentPack(
     val rulesEdition: String,
     val topics: List<TopicDto>,
     val questions: List<QuestionDto>,
+    /** Rule point ("12.4") to the text of that clause, quoted under explanations. */
+    val rules: Map<String, String> = emptyMap(),
 )
 
 @Serializable
