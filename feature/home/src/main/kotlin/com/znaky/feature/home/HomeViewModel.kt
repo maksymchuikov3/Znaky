@@ -92,7 +92,7 @@ class HomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     questions: QuestionRepository,
     progress: ProgressRepository,
-    settings: SettingsRepository,
+    private val settings: SettingsRepository,
 ) : ViewModel() {
     private val contentState = MutableStateFlow<Boolean?>(null)
     private val readState = MutableStateFlow(readChapters(context))
@@ -107,6 +107,10 @@ class HomeViewModel @Inject constructor(
     /** Reading progress lives outside Room, so the screen asks for a refresh when it comes back. */
     fun refresh() {
         readState.value = readChapters(context)
+    }
+
+    fun setCategory(category: LicenseCategory) {
+        viewModelScope.launch { settings.setLicenseCategory(category) }
     }
 
     private val book = settings.licenseCategory

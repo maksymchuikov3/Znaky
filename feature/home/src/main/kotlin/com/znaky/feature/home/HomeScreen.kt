@@ -23,14 +23,22 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.DirectionsBoat
+import androidx.compose.material.icons.rounded.DirectionsCar
+import androidx.compose.material.icons.rounded.ElectricMoped
 import androidx.compose.material.icons.rounded.EmojiEvents
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Quiz
 import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material.icons.rounded.TwoWheeler
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -57,6 +65,7 @@ import com.znaky.core.designsystem.component.ZButton
 import com.znaky.core.designsystem.theme.ZnakyTheme
 import com.znaky.core.designsystem.theme.ZnakyType
 import com.znaky.core.model.ExamBlock
+import com.znaky.core.model.LicenseCategory
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -100,7 +109,7 @@ fun NavGraphBuilder.homeScreen(
             viewModel.refresh()
             onPauseOrDispose { }
         }
-        HomeScreen(state, onOpenSection, onOpenTopic)
+        HomeScreen(state, onOpenSection, onOpenTopic, viewModel::setCategory)
     }
 }
 
@@ -133,6 +142,7 @@ internal fun HomeScreen(
     state: HomeUiState,
     onOpenSection: (HomeSection) -> Unit,
     onOpenTopic: (String) -> Unit,
+    onCategory: (LicenseCategory) -> Unit,
 ) {
     val c = ZnakyTheme.colors
     when (state) {
@@ -148,7 +158,7 @@ internal fun HomeScreen(
                 contentPadding = PaddingValues(bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                item(key = "header") { Header(state) }
+                item(key = "header") { Header(state, onCategory) }
                 item(key = "current") {
                     if (current != null) CurrentChapter(current, state.current + 1, state.chapters.size, onOpenTopic)
                     else BookDone(onExam = { onOpenSection(HomeSection.EXAM_INTRO) })
@@ -199,14 +209,62 @@ internal fun HomeScreen(
 }
 
 @Composable
-private fun Header(state: HomeUiState.Ready) {
+private fun Header(state: HomeUiState.Ready, onCategory: (LicenseCategory) -> Unit) {
     val c = ZnakyTheme.colors
     val total = state.chapters.size
     Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         // Streak, readiness and exam results live on «Прогрес»; home only says where you are in the book.
-        Text("Мій підручник", style = ZnakyType.largeTitle, color = c.textPrimary, modifier = Modifier.semantics { heading() })
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Мій підручник", style = ZnakyType.largeTitle, color = c.textPrimary, modifier = Modifier.weight(1f).semantics { heading() })
+            VehicleSwitch(state.category, onCategory)
+        }
         Text("Пройдено ${state.doneCount} з $total ${chaptersWord(total)}", style = ZnakyType.callout, color = c.textSecondary)
         LinearBar(if (total == 0) 0f else state.doneCount / total.toFloat(), Modifier.padding(end = 4.dp, top = 2.dp), color = c.success)
+    }
+}
+
+/** What the learner is studying for; switching rebuilds the book for that vehicle. */
+private class Vehicle(val category: LicenseCategory, val label: String, val icon: ImageVector)
+
+private val Vehicles = listOf(
+    Vehicle(LicenseCategory.B, "Авто", Icons.Rounded.DirectionsCar),
+    Vehicle(LicenseCategory.A, "Мотоцикл", Icons.Rounded.TwoWheeler),
+    Vehicle(LicenseCategory.A1, "Мопед", Icons.Rounded.ElectricMoped),
+    Vehicle(LicenseCategory.BOAT, "Човен", Icons.Rounded.DirectionsBoat),
+)
+
+@Composable
+private fun VehicleSwitch(category: LicenseCategory, onCategory: (LicenseCategory) -> Unit) {
+    val c = ZnakyTheme.colors
+    var open by remember { mutableStateOf(false) }
+    val current = Vehicles.firstOrNull { it.category == category } ?: Vehicle(category, category.name, Icons.Rounded.DirectionsCar)
+    Box {
+        Row(
+            Modifier
+                .clip(CircleShape)
+                .background(c.primaryTint)
+                .clickable(role = Role.Button) { open = true }
+                .padding(start = 10.dp, end = 6.dp, top = 6.dp, bottom = 6.dp)
+                .semantics { contentDescription = "Транспорт: ${current.label}. Змінити" },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(current.icon, contentDescription = null, tint = c.link, modifier = Modifier.size(18.dp))
+            Text(" ${current.label}", style = ZnakyType.footnote, color = c.onPrimaryTint)
+            Icon(Icons.Rounded.ExpandMore, contentDescription = null, tint = c.link, modifier = Modifier.size(18.dp))
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = c.surface) {
+            Vehicles.forEach { v ->
+                DropdownMenuItem(
+                    text = { Text(v.label, style = ZnakyType.bodyStrong, color = c.textPrimary) },
+                    leadingIcon = { Icon(v.icon, contentDescription = null, tint = c.link) },
+                    trailingIcon = { if (v.category == category) Icon(Icons.Rounded.Check, contentDescription = "Вибрано", tint = c.success) },
+                    onClick = {
+                        open = false
+                        if (v.category != category) onCategory(v.category)
+                    },
+                )
+            }
+        }
     }
 }
 

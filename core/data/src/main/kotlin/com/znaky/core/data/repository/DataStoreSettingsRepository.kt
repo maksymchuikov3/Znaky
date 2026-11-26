@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.znaky.core.domain.repository.ExamHorizon
 import com.znaky.core.domain.repository.SettingsRepository
+import com.znaky.core.domain.repository.ThemeMode
 import com.znaky.core.model.LicenseCategory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -22,6 +23,7 @@ class DataStoreSettingsRepository @Inject constructor(
     private val onboardingKey = booleanPreferencesKey("onboarding_done")
     private val horizonKey = stringPreferencesKey("exam_horizon")
     private val reminderKey = intPreferencesKey("reminder_hour")
+    private val themeKey = stringPreferencesKey("theme_mode")
 
     override val licenseCategory: Flow<LicenseCategory> = dataStore.data.map { prefs ->
         prefs[categoryKey]?.let { runCatching { LicenseCategory.valueOf(it) }.getOrNull() } ?: LicenseCategory.B
@@ -50,5 +52,13 @@ class DataStoreSettingsRepository @Inject constructor(
 
     override suspend fun setReminderHour(hour: Int?) {
         dataStore.edit { it[reminderKey] = hour ?: -1 }
+    }
+
+    override val themeMode: Flow<ThemeMode> = dataStore.data.map { prefs ->
+        prefs[themeKey]?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() } ?: ThemeMode.LIGHT
+    }
+
+    override suspend fun setThemeMode(mode: ThemeMode) {
+        dataStore.edit { it[themeKey] = mode.name }
     }
 }

@@ -1,19 +1,9 @@
 package com.znaky.feature.stats
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,11 +15,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.LocalFireDepartment
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,10 +34,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -57,6 +58,7 @@ import com.znaky.core.designsystem.component.ProgressRing
 import com.znaky.core.designsystem.component.ZCard
 import com.znaky.core.designsystem.theme.ZnakyTheme
 import com.znaky.core.designsystem.theme.ZnakyType
+import com.znaky.core.domain.repository.ThemeMode
 import com.znaky.core.model.ExamResult
 import kotlinx.serialization.Serializable
 
@@ -72,6 +74,7 @@ fun NavGraphBuilder.statsScreen(onTrainTopic: (String) -> Unit) {
 @Composable
 internal fun StatsScreen(onTrainTopic: (String) -> Unit, viewModel: StatsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val theme by viewModel.themeMode.collectAsStateWithLifecycle()
     val s = state ?: return LoadingBox()
     val c = ZnakyTheme.colors
     LazyColumn(
@@ -108,6 +111,40 @@ internal fun StatsScreen(onTrainTopic: (String) -> Unit, viewModel: StatsViewMod
                         TopicLevelRow(TopicRow(t.id, s.topics.firstOrNull { it.id == t.id }?.number.orEmpty(), t.title, t.completion), onClick = { onTrainTopic(t.id) })
                     }
                 }
+            }
+        }
+        item(key = "themeTitle") {
+            Text(
+                "ВИГЛЯД",
+                style = ZnakyType.footnote,
+                color = c.textTertiary,
+                modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 8.dp).semantics { heading() },
+            )
+        }
+        item(key = "theme") { ThemePicker(theme, viewModel::setThemeMode) }
+    }
+}
+
+/** Three equal pills: light, dark, or as the phone. */
+@Composable
+private fun ThemePicker(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
+    val c = ZnakyTheme.colors
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp).clip(RoundedCornerShape(16.dp)).background(c.surfaceMuted).padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        ThemeMode.entries.forEach { mode ->
+            val on = mode == selected
+            Box(
+                Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(if (on) c.surface else Color.Transparent)
+                    .selectable(selected = on, role = Role.RadioButton, onClick = { onSelect(mode) })
+                    .padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(mode.label, style = ZnakyType.subhead, color = if (on) c.textPrimary else c.textSecondary)
             }
         }
     }
