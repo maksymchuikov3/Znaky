@@ -152,7 +152,7 @@ private fun ExamBlock.style() = when (this) {
 }
 
 /** Sign art for rule sections that have one; others show the section number only. */
-private val SectionSigns = mapOf("12" to "3.29", "14" to "3.25", "15" to "3.34", "16" to "2.3", "18" to "1.22", "33" to "2.1", "8" to "4.1", "2" to "5.1")
+private val SectionSigns = mapOf("12" to "3.29", "14" to "3.25", "15" to "3.34", "16" to "2.3", "18" to "1.32", "33" to "2.1", "8" to "4.1", "2" to "5.1")
 
 @Composable
 private fun LearnHubScreen(state: LearnState?, onOpenSection: (HomeSection) -> Unit, onOpenTopic: (String) -> Unit) {
