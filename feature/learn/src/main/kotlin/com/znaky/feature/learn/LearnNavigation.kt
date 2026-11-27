@@ -32,7 +32,13 @@ fun NavGraphBuilder.learnScreens(
     composable<SignSprintRoute> { SignSprintScreen(onBack = back) }
     composable<RulesRoute> { RulesScreen(onBack = back, onOpen = { navController.navigate(RuleSectionRoute(it)) }) }
     composable<RuleSectionRoute> { entry ->
-        RuleSectionScreen(entry.toRoute<RuleSectionRoute>().section, onBack = back, onTrain = onTrainTopic)
+        RuleSectionScreen(
+            entry.toRoute<RuleSectionRoute>().section,
+            onBack = back,
+            onTrain = onTrainTopic,
+            onOpenSign = { group, code -> navController.navigate(SignCardsRoute(group, code)) },
+            onOpenMarkings = { navController.navigate(MarkingsRoute) },
+        )
     }
     composable<MarkingsRoute> { MarkingsScreen(onBack = back) }
 }

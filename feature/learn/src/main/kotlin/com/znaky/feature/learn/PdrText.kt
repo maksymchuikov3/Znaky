@@ -73,3 +73,42 @@ internal object PdrText {
             .also { cached = it }
     }
 }
+
+// ---- Links from section 33 to the sign catalogue -------------------------------------------
+
+private val CODE = Regex("""\d{1,2}\.\d{1,2}(?:\.\d{1,2})?""")
+private val RANGE = Regex("""^(\d{1,2}\.\d{1,2}(?:\.\d{1,2})?)\s*[-–]\s*(\d{1,2}\.\d{1,2}(?:\.\d{1,2})?)$""")
+
+/** «1.4.1-1.4.7» → 1.4.1 … 1.4.7; «5.82.1 і 5.83.1» → both; «3.1, 3.2» → both. */
+internal fun expandCodes(codes: String): List<String> = codes.split(',', 'і').map { it.trim() }.filter { it.isNotEmpty() }.flatMap { part ->
+    val m = RANGE.matchEntire(part)
+    if (m == null) {
+        CODE.findAll(part).map { it.value }.toList()
+    } else {
+        val (a, b) = m.destructured
+        val pa = a.split('.')
+        val pb = b.split('.')
+        if (pa.dropLast(1) == pb.dropLast(1)) {
+            (pa.last().toInt()..pb.last().toInt()).map { (pa.dropLast(1) + it.toString()).joinToString(".") }
+        } else {
+            listOf(a, b)
+        }
+    }
+}
+
+/** The sign name the rules print in quotes: «Небезпечний поворот праворуч». */
+internal val PdrPoint.officialName: String?
+    get() = blocks.firstOrNull()?.text?.let { Regex("«([^»]+)»").find(it)?.groupValues?.get(1) }
+
+private fun String.key() = lowercase().replace(Regex("[^а-яіїєґ]"), "").take(8)
+
+/**
+ * Catalogue signs drawn for a section-33 item. A sign is linked only when the catalogue
+ * name agrees with the official one, so a stale number never opens the wrong sign.
+ */
+internal fun PdrPoint.linkedSigns(): List<RoadSignInfo> {
+    if (note) return emptyList()
+    val name = officialName?.key()
+    return expandCodes(codes ?: n).mapNotNull { SignCatalog.byCode(it) }
+        .filter { name == null || it.name.key() == name }
+}

@@ -109,7 +109,14 @@ internal fun RulesScreen(onBack: () -> Unit, onOpen: (Int) -> Unit, viewModel: R
 }
 
 @Composable
-internal fun RuleSectionScreen(section: Int, onBack: () -> Unit, onTrain: (String) -> Unit, viewModel: RulesViewModel = hiltViewModel()) {
+internal fun RuleSectionScreen(
+    section: Int,
+    onBack: () -> Unit,
+    onTrain: (String) -> Unit,
+    onOpenSign: (group: String, code: String) -> Unit,
+    onOpenMarkings: () -> Unit,
+    viewModel: RulesViewModel = hiltViewModel(),
+) {
     val book by viewModel.book.collectAsStateWithLifecycle()
     val topics by viewModel.topics.collectAsStateWithLifecycle()
     val s = book?.sections?.firstOrNull { it.n == section } ?: return LoadingBox()
@@ -133,7 +140,16 @@ internal fun RuleSectionScreen(section: Int, onBack: () -> Unit, onTrain: (Strin
                     }
                 }
             }
-            item(key = "p$i") { PointCard(p) }
+            item(key = "p$i") {
+                when (s.n) {
+                    33 -> {
+                        val signs = p.linkedSigns()
+                        PointCard(p, signs = signs, onClick = signs.firstOrNull()?.let { first -> { onOpenSign(first.group, first.code) } })
+                    }
+                    34 -> PointCard(p, onClick = if (p.note) null else onOpenMarkings)
+                    else -> PointCard(p)
+                }
+            }
         }
         if (s.footnote.isNotEmpty()) item(key = "foot") { Blocks(s.footnote, Modifier.padding(horizontal = 20.dp)) }
         if (topic != null && topic.questionCount > 0) {
@@ -170,9 +186,17 @@ private fun NumberBadge(text: String) {
 }
 
 @Composable
-private fun PointCard(p: PdrPoint) {
+private fun PointCard(p: PdrPoint, signs: List<RoadSignInfo> = emptyList(), onClick: (() -> Unit)? = null) {
     val c = ZnakyTheme.colors
-    ZCard(Modifier.fillMaxWidth().padding(horizontal = 16.dp), radius = 18.dp) {
+    ZCard(Modifier.fillMaxWidth().padding(horizontal = 16.dp), radius = 18.dp, onClick = onClick) {
+        if (signs.isNotEmpty()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 10.dp)) {
+                signs.take(4).forEach { RoadSign(it.code, "${it.code} ${it.name}", Modifier.size(56.dp)) }
+                if (signs.size > 4) {
+                    Text("+${signs.size - 4}", style = ZnakyType.footnote, color = c.textTertiary, modifier = Modifier.align(Alignment.CenterVertically))
+                }
+            }
+        }
         if (!p.note) {
             Text(
                 p.label,
