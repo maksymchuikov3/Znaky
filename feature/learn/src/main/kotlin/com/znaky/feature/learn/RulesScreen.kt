@@ -1,6 +1,13 @@
 package com.znaky.feature.learn
 
 import androidx.compose.foundation.background
+import android.content.Context
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.HorizontalDivider
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.flow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,16 +59,23 @@ import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 @HiltViewModel
-internal class RulesViewModel @Inject constructor(questions: QuestionRepository) : ViewModel() {
-    val sections: StateFlow<List<Topic>?> = questions.observeTopics()
-        .map { list -> list.filter { it.block == ExamBlock.TRAFFIC_RULES }.sortedBy { it.number.toIntOrNull() ?: Int.MAX_VALUE } }
+internal class RulesViewModel @Inject constructor(
+    @ApplicationContext context: Context,
+    questions: QuestionRepository,
+) : ViewModel() {
+    val book: StateFlow<PdrBook?> = flow { emit(PdrText.load(context)) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** Question topics by ПДР section number, for the «питання з розділу» button. */
+    val topics: StateFlow<Map<String, Topic>> = questions.observeTopics()
+        .map { list -> list.filter { it.block == ExamBlock.TRAFFIC_RULES }.associateBy { it.number } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 }
 
 @Composable
-internal fun RulesScreen(onBack: () -> Unit, onOpen: (String) -> Unit, viewModel: RulesViewModel = hiltViewModel()) {
-    val sections by viewModel.sections.collectAsStateWithLifecycle()
-    val list = sections ?: return LoadingBox()
+internal fun RulesScreen(onBack: () -> Unit, onOpen: (Int) -> Unit, viewModel: RulesViewModel = hiltViewModel()) {
+    val book by viewModel.book.collectAsStateWithLifecycle()
+    val pdr = book ?: return LoadingBox()
     val c = ZnakyTheme.colors
     LazyColumn(
         Modifier.fillMaxSize().background(c.background).statusBarsPadding(),
@@ -69,60 +83,150 @@ internal fun RulesScreen(onBack: () -> Unit, onOpen: (String) -> Unit, viewModel
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item(key = "top") { TopBar(onBack = onBack) }
-        item(key = "title") { LargeTitle("Правила", subtitle = "Розділи ПДР, з яких є питання на іспиті") }
+        item(key = "title") { LargeTitle("Правила дорожнього руху", subtitle = "Повний текст ПДР по розділах і пунктах") }
         item(key = "list") {
-            GroupedList(Modifier.padding(horizontal = 16.dp)) {
-                list.forEachIndexed { i, t ->
+            GroupedList(Modifier.padding(horizontal = 16.dp), header = "Розділи 1–${pdr.sections.size}") {
+                pdr.sections.forEachIndexed { i, s ->
                     ListRow(
-                        title = t.title,
-                        subtitle = "${t.questionCount} питань",
+                        title = s.title,
+                        subtitle = "${pointsLabel(s)} · ${s.readMinutes} хв читання",
                         showDivider = i > 0,
-                        onClick = { onOpen(t.id) },
-                        leading = {
-                            Box(Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(c.tealTint), contentAlignment = Alignment.Center) {
-                                Text(t.number, style = ZnakyType.footnote, color = c.teal)
-                            }
-                        },
+                        onClick = { onOpen(s.n) },
+                        leading = { NumberBadge(s.n.toString()) },
                     )
                 }
+            }
+        }
+        item(key = "source") {
+            Text(
+                "${pdr.source}, ${pdr.edition}.",
+                style = ZnakyType.caption,
+                color = c.textTertiary,
+                modifier = Modifier.padding(horizontal = 24.dp),
+            )
+        }
+    }
+}
+
+@Composable
+internal fun RuleSectionScreen(section: Int, onBack: () -> Unit, onTrain: (String) -> Unit, viewModel: RulesViewModel = hiltViewModel()) {
+    val book by viewModel.book.collectAsStateWithLifecycle()
+    val topics by viewModel.topics.collectAsStateWithLifecycle()
+    val s = book?.sections?.firstOrNull { it.n == section } ?: return LoadingBox()
+    val topic = topics[s.n.toString()]
+    val c = ZnakyTheme.colors
+    LazyColumn(
+        Modifier.fillMaxSize().background(c.background).statusBarsPadding(),
+        contentPadding = PaddingValues(bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        item(key = "top") { TopBar(onBack = onBack, backLabel = "Розділ ${s.n}") }
+        item(key = "title") { LargeTitle(s.title, subtitle = "${pointsLabel(s)} · ${s.readMinutes} хв читання") }
+        if (s.n == 12) item(key = "speed") { SpeedLimits() }
+        if (s.intro.isNotEmpty()) item(key = "intro") { Blocks(s.intro, Modifier.padding(horizontal = 20.dp)) }
+        s.points.forEachIndexed { i, p ->
+            if (p.heading != null) {
+                item(key = "h$i") {
+                    Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(p.heading, style = ZnakyType.title2, color = c.textPrimary)
+                        if (p.headingIntro.isNotEmpty()) Blocks(p.headingIntro)
+                    }
+                }
+            }
+            item(key = "p$i") { PointCard(p) }
+        }
+        if (s.footnote.isNotEmpty()) item(key = "foot") { Blocks(s.footnote, Modifier.padding(horizontal = 20.dp)) }
+        if (topic != null && topic.questionCount > 0) {
+            item(key = "train") {
+                ZButton(
+                    "${topic.questionCount} питань із розділу",
+                    onClick = { onTrain(topic.id) },
+                    icon = Icons.Rounded.Quiz,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+        }
+    }
+}
+
+private fun pointsLabel(s: PdrSection): String {
+    val n = s.pointCount
+    val word = when {
+        s.n == 33 -> "знаків і табличок"
+        s.n == 34 -> "ліній розмітки"
+        n % 10 == 1 && n % 100 != 11 -> "пункт"
+        n % 10 in 2..4 && n % 100 !in 12..14 -> "пункти"
+        else -> "пунктів"
+    }
+    return "$n $word"
+}
+
+@Composable
+private fun NumberBadge(text: String) {
+    val c = ZnakyTheme.colors
+    Box(Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(c.tealTint), contentAlignment = Alignment.Center) {
+        Text(text, style = ZnakyType.footnote, color = c.teal)
+    }
+}
+
+@Composable
+private fun PointCard(p: PdrPoint) {
+    val c = ZnakyTheme.colors
+    ZCard(Modifier.fillMaxWidth().padding(horizontal = 16.dp), radius = 18.dp) {
+        if (!p.note) {
+            Text(
+                p.label,
+                style = ZnakyType.caption,
+                color = if (p.excluded) c.textTertiary else c.teal,
+                modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(c.tealTint).padding(horizontal = 8.dp, vertical = 3.dp),
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+        Blocks(p.blocks, dim = p.excluded)
+    }
+}
+
+@Composable
+private fun Blocks(blocks: List<PdrBlock>, modifier: Modifier = Modifier, dim: Boolean = false) {
+    val c = ZnakyTheme.colors
+    val text = if (dim) c.textTertiary else c.textPrimary
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        blocks.forEach { b ->
+            when (b.t) {
+                "li" -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(b.mark.orEmpty(), style = ZnakyType.bodyStrong, color = c.teal, modifier = Modifier.width(28.dp))
+                    Text(b.text, style = ZnakyType.body, color = text, modifier = Modifier.weight(1f))
+                }
+                "note" -> Text(
+                    b.text,
+                    style = ZnakyType.subhead,
+                    color = c.textSecondary,
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.sandTint).padding(12.dp),
+                )
+                "table" -> PdrTable(b.rows)
+                else -> Text(b.text, style = ZnakyType.body, color = text)
             }
         }
     }
 }
 
 @Composable
-internal fun RuleSectionScreen(topicId: String, onBack: () -> Unit, onTrain: (String) -> Unit, viewModel: RulesViewModel = hiltViewModel()) {
-    val sections by viewModel.sections.collectAsStateWithLifecycle()
-    val topic = sections?.firstOrNull { it.id == topicId } ?: return LoadingBox()
+private fun PdrTable(rows: List<List<String>>) {
     val c = ZnakyTheme.colors
-    LazyColumn(
-        Modifier.fillMaxSize().background(c.background).statusBarsPadding(),
-        contentPadding = PaddingValues(bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        item(key = "top") { TopBar(onBack = onBack, backLabel = "Розділ ${topic.number}") }
-        item(key = "title") { LargeTitle(topic.title) }
-        if (topic.number == "12") {
-            item(key = "speed") { SpeedLimits() }
-            item(key = "points") {
-                GroupedList(Modifier.padding(horizontal = 16.dp), header = "Головне") {
-                    ListRow("У населених пунктах — до 50 км/год", subtitle = "п. 12.4")
-                    ListRow("У житловій і пішохідній зонах — до 20 км/год", subtitle = "п. 12.5", showDivider = true)
-                    ListRow("Водій зі стажем до 2 років — до 70 км/год", subtitle = "п. 12.7", showDivider = true)
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.surfaceMuted)) {
+        rows.forEachIndexed { i, row ->
+            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                row.forEachIndexed { j, cell ->
+                    Text(
+                        cell,
+                        style = if (i == 0) ZnakyType.footnote else ZnakyType.subhead,
+                        color = if (j == 0) c.textPrimary else c.textSecondary,
+                        textAlign = if (j == 0) TextAlign.Start else TextAlign.End,
+                        modifier = Modifier.weight(if (j == 0) 2.2f else 1f),
+                    )
                 }
             }
-        } else {
-            item(key = "soon") {
-                Text(
-                    "Наочний конспект цього розділу з’явиться в наступних оновленнях. Поки що тренуйтеся на питаннях.",
-                    style = ZnakyType.callout,
-                    color = c.textSecondary,
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                )
-            }
-        }
-        item(key = "train") {
-            ZButton("${topic.questionCount} питань із розділу", onClick = { onTrain(topic.id) }, icon = Icons.Rounded.Quiz, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
+            if (i < rows.lastIndex) HorizontalDivider(color = c.separator)
         }
     }
 }

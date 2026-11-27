@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
 @Serializable data class SignCardsRoute(val group: String, val startCode: String? = null)
 @Serializable data object SignSprintRoute
 @Serializable data object RulesRoute
-@Serializable data class RuleSectionRoute(val topicId: String)
+@Serializable data class RuleSectionRoute(val section: Int)
 @Serializable data object MarkingsRoute
 
 fun NavGraphBuilder.learnScreens(
@@ -32,7 +32,7 @@ fun NavGraphBuilder.learnScreens(
     composable<SignSprintRoute> { SignSprintScreen(onBack = back) }
     composable<RulesRoute> { RulesScreen(onBack = back, onOpen = { navController.navigate(RuleSectionRoute(it)) }) }
     composable<RuleSectionRoute> { entry ->
-        RuleSectionScreen(entry.toRoute<RuleSectionRoute>().topicId, onBack = back, onTrain = onTrainTopic)
+        RuleSectionScreen(entry.toRoute<RuleSectionRoute>().section, onBack = back, onTrain = onTrainTopic)
     }
     composable<MarkingsRoute> { MarkingsScreen(onBack = back) }
 }
