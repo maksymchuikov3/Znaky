@@ -27,6 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
@@ -45,11 +46,11 @@ import com.znaky.core.designsystem.theme.ZnakyType
 @Composable
 internal fun SignsScreen(onBack: () -> Unit, onOpenCards: (group: String, code: String?) -> Unit, onPlay: () -> Unit) {
     val c = ZnakyTheme.colors
-    var selectedGroup by rememberSaveable { mutableStateOf("2") }
+    var selectedGroup by rememberSaveable { mutableStateOf("1") }
     var query by rememberSaveable { mutableStateOf("") }
     val shown = remember(selectedGroup, query) {
         if (query.isBlank()) SignCatalog.inGroup(selectedGroup)
-        else SignCatalog.signs.filter { it.code.startsWith(query.trim()) || it.name.contains(query.trim(), ignoreCase = true) }
+        else SignCatalog.signs.filter { it.matches(query) }
     }
     LazyColumn(
         Modifier.fillMaxSize().background(c.background).statusBarsPadding(),
@@ -62,7 +63,7 @@ internal fun SignsScreen(onBack: () -> Unit, onOpenCards: (group: String, code: 
                 Pill("Картки", icon = Icons.Rounded.Style, onClick = { onOpenCards(selectedGroup, null) })
             }
         }
-        item(key = "title") { LargeTitle("Дорожні знаки", subtitle = "${SignCatalog.signs.size} знаків у ${SignCatalog.groups.size} групах") }
+        item(key = "title") { LargeTitle("Дорожні знаки", subtitle = "${signCount(SignCatalog.signs.size)} у ${SignCatalog.groups.size} групах, як у розділі 33 ПДР") }
         item(key = "search") { SearchField(query, { query = it }, "Номер або назва знака") }
         if (query.isBlank()) {
             item(key = "groups") {
@@ -80,9 +81,12 @@ internal fun SignsScreen(onBack: () -> Unit, onOpenCards: (group: String, code: 
                                 .padding(12.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
-                            Text(g.number, style = ZnakyType.title, color = g.color)
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                RoadSign(g.sample, "", Modifier.size(30.dp))
+                                Text(g.number, style = ZnakyType.title, color = g.color)
+                            }
                             Text(g.name, style = ZnakyType.footnote, color = c.textPrimary, minLines = 2, maxLines = 2)
-                            Text("${SignCatalog.inGroup(g.number).size} знаків", style = ZnakyType.caption, color = c.textTertiary)
+                            Text(signCount(SignCatalog.inGroup(g.number).size), style = ZnakyType.caption, color = c.textTertiary)
                         }
                     }
                 }
@@ -112,11 +116,33 @@ internal fun SignsScreen(onBack: () -> Unit, onOpenCards: (group: String, code: 
         }
         item(key = "footer") {
             Text(
-                "Знаки намальовано схематично. Каталог поповнюється з кожним оновленням.",
+                "Усі знаки розділу 33 ПДР, включно з табличками. Зображення відповідають формам і кольорам ДСТУ 4100, але намальовані спрощено; написи й числа на знаках наведено як приклад.",
                 style = ZnakyType.footnote.copy(fontWeight = ZnakyType.subhead.fontWeight),
                 color = c.textTertiary,
                 modifier = Modifier.padding(horizontal = 24.dp),
             )
         }
     }
+}
+
+/** «1 знак», «3 знаки», «12 знаків». */
+internal fun signCount(n: Int): String {
+    val word = when {
+        n % 100 in 11..14 -> "знаків"
+        n % 10 == 1 -> "знак"
+        n % 10 in 2..4 -> "знаки"
+        else -> "знаків"
+    }
+    return "$n $word"
+}
+
+/** Search by number («3.29», «3,29», «329») or by any word of the name or explanation. */
+private fun RoadSignInfo.matches(query: String): Boolean {
+    val q = query.trim().lowercase()
+    if (q.isEmpty()) return true
+    if (q.none { it.isLetter() }) {
+        val num = q.replace(',', '.').replace(' ', '.')
+        return code.startsWith(num) || code.replace(".", "").startsWith(num.replace(".", ""))
+    }
+    return name.lowercase().contains(q) || description.lowercase().contains(q)
 }
