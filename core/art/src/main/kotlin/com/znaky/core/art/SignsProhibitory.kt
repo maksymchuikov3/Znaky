@@ -156,6 +156,16 @@ internal val prohibitorySigns: Map<String, SignArt> = linkedMapOf(
             circle(50f, 70f, 4.4f, fill(S_BLACK))
         }
     },
+    "3.44" to { vehiclesBanned(listOf<ArtCanvas.() -> Unit>({ at(0f, 0f, 0.5f) { truckSide(S_BLACK, S_WHITE) } }, { at(0f, 0f, 0.5f) { tractorSide(S_BLACK, S_WHITE) } })) },
+    "3.45" to {
+        vehiclesBanned(
+            listOf<ArtCanvas.() -> Unit>(
+                { at(0f, 0f, 0.5f) { truckSide(S_BLACK, S_WHITE) } },
+                { at(0f, 0f, 0.5f) { tractorSide(S_BLACK, S_WHITE) } },
+                { at(0f, 0f, 0.5f) { horseCart(S_BLACK, S_WHITE) } },
+            ),
+        )
+    },
 )
 
 /** Car seen from the front, centred on the origin. */
@@ -237,5 +247,22 @@ private fun ArtCanvas.checkpoint(word: String) {
     prohibitory {
         rect(14f, 48.6f, 86f, 51.4f, fill(S_RED))
         text(word, 50f, 39.5f, 7.6f, S_BLACK, condensed = true)
+    }
+}
+
+
+/** 3.44, 3.45: one white plate with several prohibitory signs = several bans at once. */
+private fun ArtCanvas.vehiclesBanned(items: List<ArtCanvas.() -> Unit>) {
+    val n = items.size
+    rectBlank(if (n == 2) 92f else 96f, 50f, S_WHITE, border = S_BLACK)
+    val step = if (n == 2) 40f else 30f
+    items.forEachIndexed { i, glyph ->
+        val x = 50f + (i - (n - 1) / 2f) * step
+        at(x, 50f, if (n == 2) 1f else 0.82f) {
+            miniRound {
+                layer { clip(ArtPath.circle(0f, 0f, 14f)); glyph() }
+                layer { clip(ArtPath.circle(0f, 0f, 14f)); line(-10f, -10f, 10f, 10f, stroke(S_RED, 3.4f, cap = Cap.BUTT)) }
+            }
+        }
     }
 }
