@@ -47,6 +47,8 @@ internal val plateSigns: Map<String, SignArt> = linkedMapOf(
     "7.6.3" to { parkingMethod(2) },
     "7.6.4" to { parkingMethod(3) },
     "7.6.5" to { parkingMethod(4) },
+    "7.6.6" to { parkingMethod(5) },
+    "7.6.7" to { parkingMethod(6) },
     "7.7" to {
         plate {
             at(40f, 52f, 0.72f) { carSide(S_BLACK, S_WHITE) }
@@ -107,7 +109,6 @@ internal val plateSigns: Map<String, SignArt> = linkedMapOf(
             label("2 год", x = 66f, size = 11f)
         }
     },
-    "7.20" to { plate(h = 60f) { text("Діє з", 50f, 38f, 8f, S_BLACK, condensed = true); text("01.03.2027", 50f, 60f, 10f, S_BLACK, condensed = true) } },
     "7.21.1" to { plate { at(30f, 50f, 0.6f) { carSide(S_BLACK, S_WHITE) }; mirrored { at(30f, 50f, 0.6f) { carSide(S_BLACK, S_WHITE) } }; spark(50f, 42f) } },
     "7.21.2" to { plate { at(30f, 50f, 0.6f) { carSide(S_BLACK, S_WHITE) }; at(64f, 50f, 0.6f) { carSide(S_BLACK, S_WHITE) }; spark(48f, 40f) } },
     "7.21.3" to { plate { at(32f, 52f, 0.6f) { carSide(S_BLACK, S_WHITE) }; at(70f, 50f, 0.66f) { pedestrian(S_BLACK, facing = -1) }; spark(54f, 40f) } },
@@ -119,6 +120,78 @@ internal val plateSigns: Map<String, SignArt> = linkedMapOf(
             line(22f, 60f, 76f, 70f, stroke(S_BLACK, 2.4f))
             line(30f, 40f, 40f, 66f, stroke(S_BLACK, 1.6f))
             line(58f, 40f, 62f, 66f, stroke(S_BLACK, 1.6f))
+        }
+    },
+    "7.2.7" to {
+        plate {
+            line(14f, 50f, 86f, 50f, stroke(S_BLACK, 3f, cap = Cap.BUTT))
+            arrowHead(10f, 50f, 180f, 11f, 8f, S_BLACK); arrowHead(90f, 50f, 0f, 11f, 8f, S_BLACK)
+            rect(48.5f, 38f, 51.5f, 62f, fill(S_BLACK))
+            text("15 м", 30f, 40f, 7f, S_BLACK, condensed = true); text("15 м", 70f, 40f, 7f, S_BLACK, condensed = true)
+        }
+    },
+    "7.5.9" to { plate { rect(30f, 36f, 70f, 64f, fill(S_BLUE), radius = 2f); text("TIR", 50f, 50f, 14f, S_WHITE) } },
+            "7.20" to {
+        plate(h = 60f) {
+            rect(22f, 30f, 28f, 62f, stroke(S_BLACK, 1.6f), radius = 3f)
+            circle(25f, 66f, 6f, fill(S_BLACK)); rect(23.6f, 44f, 26.4f, 64f, fill(S_BLACK))
+            text("> 28°C", 60f, 50f, 14f, S_BLACK, condensed = true)
+        }
+    },
+    "7.21.5" to { plate { at(32f, 52f, 0.6f) { carSide(S_BLACK, S_WHITE) }; at(70f, 52f, 0.56f) { bicycle(S_BLACK, 3f) }; spark(52f, 40f) } },
+    "7.23" to {
+        plate {
+            rect(36f, 34f, 52f, 68f, fill(S_BLACK), radius = 2f)
+            path(ArtPath.svg("M46 38 L40 50 L44 50 L42 62 L49 47 L45 47 L48 38 Z"), fill(S_WHITE))
+            path(ArtPath.svg("M52 44 L58 44 Q60 44 60 46 L60 58 Q60 62 63 62 Q66 62 66 58 L66 40"), stroke(S_BLACK, 2.4f))
+        }
+    },
+    "7.24" to {
+        plate {
+            rect(16f, 40f, 46f, 60f, fill(S_BLACK), radius = 2f); rect(20f, 43f, 30f, 50f, fill(S_WHITE))
+            rect(44f, 54f, 66f, 58f, fill(S_BLACK)); line(46f, 54f, 66f, 36f, stroke(S_BLACK, 2.4f))
+            path(ArtPath.svg("M66 36 L66 44"), stroke(S_BLACK, 1.6f))
+            at(76f, 46f, 0.42f) { layer { rotate(-20f); carSide(S_BLACK, S_WHITE) } }
+            circle(24f, 62f, 4f, fill(S_BLACK)); circle(40f, 62f, 4f, fill(S_BLACK))
+        }
+    },
+    "7.25" to {
+        plate {
+            path(ArtPath.svg("M50 32 L60 50 L50 68 L40 50 Z"), fill(S_BLACK))
+            arrow(36f, 66f, 24f, 34f, 3f, 9f, 6f, S_BLACK); arrow(64f, 66f, 76f, 34f, 3f, 9f, 6f, S_BLACK)
+        }
+    },
+    "7.26" to {
+        plate {
+            path(ArtPath.svg("M16 42 Q16 34 26 34 L30 34 L30 66 L26 66 Q16 66 16 58 Z"), fill(S_BLACK))
+            for (i in 0 until 3) line(34f, 40f + i * 10f, 42f, 40f + i * 10f, stroke(S_BLACK, 2.2f))
+            text("01.10 – 30.04", 69f, 50f, 6f, S_BLACK, condensed = true)
+        }
+    },
+    "7.27" to {
+        plate {
+            rect(30f, 38f, 58f, 58f, fill(S_BLACK), radius = 3f)
+            circle(36f, 62f, 4f, fill(S_BLACK)); circle(52f, 62f, 4f, fill(S_BLACK))
+            line(58f, 44f, 70f, 44f, stroke(S_BLACK, 2.4f))
+            for (i in 0 until 3) rect(16f + i * 0f, 68f, 84f, 70f, fill(S_BLACK))
+            rect(64f, 50f, 84f, 54f, fill(S_BLACK))
+        }
+    },
+    "7.28.1" to { plate { circle(50f, 50f, 15f, fill(S_RED)); text("M", 50f, 50f, 18f, S_WHITE) } },
+    "7.28.2" to { plate { at(50f, 50f, 0.86f) { busSide(S_BLACK, S_WHITE) } } },
+    "7.28.3" to { plate { at(50f, 50f, 0.66f) { tramFront(S_BLACK, S_WHITE) } } },
+    "7.28.4" to { plate { at(50f, 52f, 0.8f) { trolleybusSide(S_BLACK, S_WHITE) } } },
+    "7.29.1" to { bikeDirection { arrow(72f, 64f, 72f, 32f, 3f, 10f, 7f, S_BLACK) } },
+    "7.29.2" to { bikeDirection { arrow(72f, 64f, 72f, 32f, 3f, 10f, 7f, S_BLACK); arrow(84f, 32f, 84f, 64f, 3f, 10f, 7f, S_BLACK) } },
+    "7.29.3" to { bikeDirection { arrow(62f, 50f, 88f, 50f, 3f, 10f, 7f, S_BLACK) } },
+    "7.29.4" to { bikeDirection { arrow(88f, 50f, 62f, 50f, 3f, 10f, 7f, S_BLACK) } },
+    "7.29.5" to { bikeDirection { arrow(62f, 44f, 88f, 44f, 3f, 10f, 7f, S_BLACK); arrow(88f, 58f, 62f, 58f, 3f, 10f, 7f, S_BLACK) } },
+    "7.29.6" to { bikeDirection { bentArrow(68f, 66f, 90f, 40f, 1, 3f, 10f, 7f, S_BLACK, r = 6f) } },
+    "7.30" to {
+        plate {
+            rect(30f, 30f, 70f, 70f, fill(S_YELLOW), radius = 3f)
+            circle(50f, 44f, 8f, fill(S_BLACK))
+            path(ArtPath.svg("M38 66 Q38 54 50 54 Q62 54 62 66 Z"), fill(S_BLACK))
         }
     },
 )
@@ -155,7 +228,17 @@ private fun ArtCanvas.parkingMethod(kind: Int) {
             0 -> at(50f, 48f, 0.7f) { carSide(S_BLACK, S_WHITE) }
             1 -> { rect(26f, 36f, 74f, 37f, fill(S_GREY)); at(50f, 46f, 0.7f) { carSide(S_BLACK, S_WHITE) } }
             2 -> { at(50f, 44f, 0.7f) { carSide(S_BLACK, S_WHITE) }; rect(26f, 51f, 74f, 52f, fill(S_GREY)) }
+            // 3: across, on the roadway; 4: across, half on the sidewalk; 5: across, on the sidewalk
             3 -> for (x in listOf(36f, 50f, 64f)) at(x, 50f, 0.42f) { layer { rotate(-90f); carSide(S_BLACK, S_WHITE) } }
+            4 -> {
+                rect(26f, 49.5f, 74f, 50.5f, fill(S_GREY))
+                for (x in listOf(36f, 50f, 64f)) at(x, 50f, 0.42f) { layer { rotate(-90f); carSide(S_BLACK, S_WHITE) } }
+            }
+            5 -> {
+                for (x in listOf(36f, 50f, 64f)) at(x, 48f, 0.38f) { layer { rotate(-90f); carSide(S_BLACK, S_WHITE) } }
+                rect(26f, 66f, 74f, 67f, fill(S_GREY))
+            }
+            // 6: at an angle of 30°, 45° or 60°
             else -> for (x in listOf(36f, 52f, 68f)) at(x, 50f, 0.42f) { layer { rotate(-60f); carSide(S_BLACK, S_WHITE) } }
         }
     }
@@ -174,4 +257,11 @@ private fun ArtCanvas.snowflake(cx: Float, cy: Float, r: Float) {
 
 private fun ArtCanvas.spark(x: Float, y: Float) {
     for (i in 0 until 4) layer { rotate(i * 45f, x, y); line(x - 5f, y, x + 5f, y, stroke(S_RED, 2f)) }
+}
+
+
+/** 7.29.x: plate with a bicycle on the left and the direction on the right. */
+private fun ArtCanvas.bikeDirection(arrows: ArtCanvas.() -> Unit) = plate {
+    at(32f, 50f, 0.66f) { bicycle(S_BLACK, 3f) }
+    arrows()
 }

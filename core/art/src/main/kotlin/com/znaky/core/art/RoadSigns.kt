@@ -28,7 +28,9 @@ object RoadSigns {
     }
 
     /** Codes of every sign that can be drawn, in the order of the Rules. */
-    val codes: List<String> get() = art.keys.toList()
+    val codes: List<String> by lazy {
+        art.keys.sortedWith(compareBy<String>({ it.split('.')[0].toInt() }, { it.split('.')[1].toInt() }, { it.split('.').getOrNull(2)?.toInt() ?: 0 }))
+    }
 
     fun has(code: String) = code in art
 

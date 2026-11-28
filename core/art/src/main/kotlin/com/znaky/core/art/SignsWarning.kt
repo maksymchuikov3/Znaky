@@ -166,6 +166,20 @@ internal val warningSigns: Map<String, SignArt> = linkedMapOf(
             }
         }
     },
+    "1.4.4" to { chevronBoard(1, 1, 56f) },
+    "1.4.5" to { chevronBoard(1, -1, 56f) },
+    "1.4.6" to { chevronBoard(2, 1, 76f) },
+    "1.4.7" to { chevronBoard(2, -1, 76f) },
+    "1.41" to {
+        warning {
+            at(36f, 70f, 0.62f) { layer { rotate(24f); carSide(S_BLACK, S_WHITE) } }
+            mirrored { at(36f, 70f, 0.62f) { layer { rotate(24f); carSide(S_BLACK, S_WHITE) } } }
+            for (a in listOf(-60f, -90f, -120f)) {
+                val r = Math.toRadians(a.toDouble())
+                line(50f + 6f * kotlin.math.cos(r).toFloat(), 56f + 6f * kotlin.math.sin(r).toFloat(), 50f + 13f * kotlin.math.cos(r).toFloat(), 56f + 13f * kotlin.math.sin(r).toFloat(), stroke(S_BLACK, 2.4f))
+            }
+        }
+    },
 )
 
 private fun ArtCanvas.zigzag(dir: Int) {
@@ -247,5 +261,18 @@ private fun ArtCanvas.approachBoard(n: Int, right: Boolean) {
             val y = 50f - (n - 1) * 13f + i * 26f - 5f
             path(ArtPath().moveTo(50f - 18f * k, y + 12f * 1f).lineTo(50f + 18f * k, y - 10f).lineTo(50f + 18f * k, y - 1f).lineTo(50f - 18f * k, y + 21f).close(), fill(S_RED))
         }
+    }
+}
+
+
+/** 1.4.4–1.4.7: smaller red boards with one or two white chevrons. */
+private fun ArtCanvas.chevronBoard(n: Int, dir: Int, h: Float) {
+    rectBlank(if (n == 1) 56f else 70f, h, S_RED)
+    val k = dir.toFloat()
+    val xs = if (n == 1) listOf(50f) else listOf(42f, 58f)
+    val top = 50f - h * 0.3f
+    val bot = 50f + h * 0.3f
+    xs.forEach { x ->
+        shape(S_WHITE, x - 7f * k, top, x + 5f * k, 50f, x - 7f * k, bot, x - 1f * k, bot, x + 11f * k, 50f, x - 1f * k, top, round = 0.3f)
     }
 }

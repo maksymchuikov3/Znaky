@@ -7,12 +7,15 @@ import com.znaky.core.domain.progress.streakLength
 import com.znaky.core.domain.readiness.ReadinessCalculator
 import com.znaky.core.domain.repository.ProgressRepository
 import com.znaky.core.domain.repository.QuestionRepository
+import com.znaky.core.domain.repository.SettingsRepository
+import com.znaky.core.domain.repository.ThemeMode
 import com.znaky.core.model.ExamResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
 import javax.inject.Inject
@@ -49,7 +52,15 @@ class StatsViewModel @Inject constructor(
     progress: ProgressRepository,
     questions: QuestionRepository,
     calculator: ReadinessCalculator,
+    private val settings: SettingsRepository,
 ) : ViewModel() {
+    val themeMode: StateFlow<ThemeMode> = settings.themeMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ThemeMode.LIGHT)
+
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch { settings.setThemeMode(mode) }
+    }
+
     private val today = LocalDate.now()
     private val monday = today.with(DayOfWeek.MONDAY)
 
@@ -70,7 +81,7 @@ class StatsViewModel @Inject constructor(
         val weak = topicProgress
             .filter { it.totalQuestions > 0 && it.completion < 0.9f }
             .sortedBy { it.completion }
-            .take(3)
+            .take(5)
             .map { WeakTopic(it.topicId, titles[it.topicId] ?: it.topicId, it.completion) }
 
         val byId = topicProgress.associateBy { it.topicId }

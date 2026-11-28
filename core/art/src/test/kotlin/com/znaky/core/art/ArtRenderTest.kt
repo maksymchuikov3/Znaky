@@ -15,9 +15,9 @@ class ArtRenderTest {
     }
 
     @Test fun everySignOfSection33IsDrawn() {
-        // 1.1–1.40, 2.1–2.6, 3.1–3.43, 4.1–4.18, 5.1–5.70, 6.1–6.24, 7.1–7.22 with all sub-variants.
-        assertEquals(293, RoadSigns.codes.size)
-        listOf("1.3.2", "1.23.4", "1.31.6", "2.2", "3.43", "4.18.3", "5.29.3", "5.70", "6.7.3", "7.6.5", "7.22").forEach { assertTrue(it, RoadSigns.has(it)) }
+        // Current edition: 1.1–1.41, 2.1–2.6, 3.1–3.45, 4.1–4.24, 5.1–5.96, 6.1–6.23, 7.1–7.30 with all sub-variants.
+        assertEquals(369, RoadSigns.codes.size)
+        listOf("1.3.2", "1.4.7", "1.41", "2.2", "3.45", "4.20.3", "4.24", "5.32.3", "5.67.3", "5.96.2", "6.7.7", "6.23", "7.6.7", "7.30").forEach { assertTrue(it, RoadSigns.has(it)) }
         RoadSigns.codes.forEach { code ->
             assertTrue("sign $code is empty", painted(120f, 120f) { RoadSigns.draw(it, code) } > 0.15f)
         }

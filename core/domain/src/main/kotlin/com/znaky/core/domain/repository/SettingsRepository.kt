@@ -11,6 +11,13 @@ enum class ExamHorizon(val label: String, val days: Int?) {
     UNKNOWN("Ще не знаю", null),
 }
 
+/** App colours: light by default, or dark, or following the phone. */
+enum class ThemeMode(val label: String) {
+    LIGHT("Світла"),
+    DARK("Темна"),
+    SYSTEM("Як у телефоні"),
+}
+
 interface SettingsRepository {
     val licenseCategory: Flow<LicenseCategory>
 
@@ -29,4 +36,8 @@ interface SettingsRepository {
     val reminderHour: Flow<Int?>
 
     suspend fun setReminderHour(hour: Int?)
+
+    val themeMode: Flow<ThemeMode>
+
+    suspend fun setThemeMode(mode: ThemeMode)
 }

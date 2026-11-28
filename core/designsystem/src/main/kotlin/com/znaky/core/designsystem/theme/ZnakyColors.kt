@@ -5,7 +5,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 /**
- * Semantic colour tokens of the Znaky design (light and dark). Screens use these
+ * Semantic colour tokens of the app design (light and dark): warm, soft neutrals. Screens use these
  * instead of raw colours, so both themes stay consistent with the mockup.
  */
 @Immutable
@@ -47,18 +47,18 @@ data class ZnakyColors(
 )
 
 val LightZnakyColors = ZnakyColors(
-    background = Color(0xFFF3F4F7),
-    surface = Color(0xFFFFFFFF),
-    surfaceMuted = Color(0xFFE7EAF0),
-    separator = Color(0xFFE7EAF0),
-    textPrimary = Color(0xFF14202E),
-    textSecondary = Color(0xFF56616F),
-    textTertiary = Color(0xFF6B7583),
-    primary = Color(0xFF2F62C9),
+    background = Color(0xFFF9F5EF),
+    surface = Color(0xFFFFFDFA),
+    surfaceMuted = Color(0xFFF1EBE3),
+    separator = Color(0xFFEDE5DA),
+    textPrimary = Color(0xFF2B2622),
+    textSecondary = Color(0xFF655C54),
+    textTertiary = Color(0xFF776E66),
+    primary = Color(0xFF3F6FD1),
     onPrimary = Color(0xFFFFFFFF),
-    link = Color(0xFF2F62C9),
-    primaryTint = Color(0xFFE6EEFC),
-    onPrimaryTint = Color(0xFF234C9E),
+    link = Color(0xFF3A68C6),
+    primaryTint = Color(0xFFE8EFFC),
+    onPrimaryTint = Color(0xFF2A4F9E),
     accent = Color(0xFFFFB547),
     accentTint = Color(0xFFFDEBDD),
     onAccentTint = Color(0xFF9A4512),
@@ -81,13 +81,13 @@ val LightZnakyColors = ZnakyColors(
 )
 
 val DarkZnakyColors = ZnakyColors(
-    background = Color(0xFF0F1318),
-    surface = Color(0xFF1A2029),
-    surfaceMuted = Color(0xFF2A323D),
-    separator = Color(0xFF262E39),
-    textPrimary = Color(0xFFEEF2F7),
-    textSecondary = Color(0xFFAEB8C5),
-    textTertiary = Color(0xFF939EAC),
+    background = Color(0xFF171411),
+    surface = Color(0xFF231F1B),
+    surfaceMuted = Color(0xFF312B26),
+    separator = Color(0xFF2E2823),
+    textPrimary = Color(0xFFF3EDE6),
+    textSecondary = Color(0xFFBDB3A9),
+    textTertiary = Color(0xFF9C9289),
     primary = Color(0xFF7FA6F5),
     onPrimary = Color(0xFF0E1A33),
     link = Color(0xFFA9C2F8),

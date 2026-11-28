@@ -29,12 +29,8 @@ internal val serviceSigns: Map<String, SignArt> = linkedMapOf(
         }
     },
     "6.7.1" to { service { at(50f, 43f, 1.05f) { fuelPump(S_BLACK, S_WHITE) } } },
-    "6.7.2" to { service { at(42f, 43f, 0.95f) { fuelPump(S_BLACK, S_WHITE) } }; text("ГАЗ", 50f, 84f, 11f, S_WHITE, condensed = true) },
-    "6.7.3" to {
-        service { at(40f, 43f, 0.9f) { fuelPump(S_BLACK, S_WHITE) } }
-        text("ГАЗ", 50f, 84f, 11f, S_WHITE, condensed = true)
-        rect(66f, 30f, 72f, 60f, fill(S_BLACK), radius = 2f)
-    },
+    "6.7.2" to { service { at(50f, 43f, 1.05f) { fuelPump(S_GAS, S_WHITE) } } },
+    "6.7.4" to { service { at(36f, 43f, 0.8f) { fuelPump(S_BLACK, S_WHITE) }; at(66f, 43f, 0.8f) { fuelPump(S_GAS, S_WHITE) } } },
     "6.8" to { service { handset(50f, 43f, 1.1f) } },
     "6.9" to { service { text("i", 50f, 43f, 34f, S_BLACK) } },
     "6.10" to {
@@ -92,28 +88,36 @@ internal val serviceSigns: Map<String, SignArt> = linkedMapOf(
     "6.20" to { service { tent(34f, 0.7f); caravan(64f, 50f, 0.62f) } },
     "6.21" to {
         service {
-            path(ArtPath.svg("M22 66 L22 40 L50 20 L78 40 L78 66 Z"), fill(S_BLACK))
-            rect(30f, 46f, 40f, 54f, fill(S_WHITE)); rect(60f, 46f, 70f, 54f, fill(S_WHITE)); rect(45f, 50f, 55f, 66f, fill(S_WHITE))
-        }
-    },
-    "6.22" to {
-        service {
-            at(48f, 46f, 0.9f) { pedestrian(S_BLACK) }
-            rect(37f, 30f, 45f, 42f, fill(S_BLACK), radius = 2f)
-            poly(S_BLACK, 2f, 58f, 34f, 62f, 66f)
-        }
-    },
-    "6.23" to {
-        service {
             circle(34f, 34f, 4.6f, fill(S_BLACK))
             path(ArtPath.svg("M38 40 L60 32 L62 36 L44 44 L48 48 L42 52 Z"), fill(S_BLACK))
             for (i in 0 until 2) path(ArtPath.svg("M22 ${56 + i * 7} q4.5 -3.4 9 0 t9 0 t9 0 t9 0 t9 0 t9 0"), stroke(S_BLACK, 2.4f))
         }
     },
-    "6.24" to {
+    "6.22" to {
         service {
             path(ArtPath.svg("M24 66 L24 28 L30 28 L30 34 L36 34 L36 28 L42 28 L42 40 L58 40 L58 28 L64 28 L64 34 L70 34 L70 28 L76 28 L76 66 Z"), fill(S_BLACK))
             path(ArtPath.svg("M44 66 L44 56 Q50 48 56 56 L56 66 Z"), fill(S_WHITE))
+        }
+    },
+    "6.7.3" to { service { at(50f, 43f, 1.05f) { charger(S_EV) } } },
+    "6.7.5" to { service { at(36f, 43f, 0.8f) { fuelPump(S_BLACK, S_WHITE) }; at(66f, 43f, 0.8f) { charger(S_EV) } } },
+    "6.7.6" to { service { at(36f, 43f, 0.8f) { fuelPump(S_GAS, S_WHITE) }; at(66f, 43f, 0.8f) { charger(S_EV) } } },
+    "6.7.7" to {
+        service {
+            at(30f, 43f, 0.62f) { fuelPump(S_BLACK, S_WHITE) }
+            at(51f, 43f, 0.62f) { fuelPump(S_GAS, S_WHITE) }
+            at(72f, 43f, 0.62f) { charger(S_EV) }
+        }
+    },
+    "6.23" to {
+        service {
+            circle(50f, 43f, 22f, fill(S_BLACK))
+            circle(50f, 43f, 12f, fill(S_WHITE))
+            circle(50f, 43f, 5f, fill(S_BLACK))
+            for (i in 0 until 12) {
+                val a = Math.toRadians(i * 30.0)
+                line(50f + 17f * kotlin.math.cos(a).toFloat(), 43f + 17f * kotlin.math.sin(a).toFloat(), 50f + 21f * kotlin.math.cos(a).toFloat(), 43f + 21f * kotlin.math.sin(a).toFloat(), stroke(S_WHITE, 1.6f))
+            }
         }
     },
 )
@@ -158,4 +162,19 @@ private fun ArtCanvas.caravan(cx: Float, cy: Float, k: Float) = at(cx, cy, k) {
     rect(4f, -8f, 12f, 6f, fill(S_WHITE), radius = 1f)
     rect(18f, 4f, 28f, 6.4f, fill(S_BLACK))
     circle(-6f, 12f, 5f, fill(S_WHITE)); circle(-6f, 12f, 4f, fill(S_BLACK))
+}
+
+
+/** Light blue of gas symbols and green of charging symbols on 6.7.x (ПДР 33, 6.7). */
+private const val S_GAS = 0xFF2E9FE0
+private const val S_EV = 0xFF169B4E
+
+/** EV charging post with a plug cable and a lightning bolt, centred on the origin. */
+private fun ArtCanvas.charger(ink: Long) {
+    rect(-14f, -18f, 4f, 18f, fill(ink), radius = 2f)
+    path(ArtPath.svg("M-3 -12 L-9 0 L-5 0 L-7 10 L0 -3 L-4 -3 L-1 -12 Z"), fill(S_WHITE))
+    rect(-17f, 15f, 7f, 19f, fill(ink), radius = 1f)
+    path(ArtPath.svg("M4 -6 L9 -6 Q11 -6 11 -4 L11 8 Q11 11 13.6 11 Q16 11 16 8 L16 -8"), stroke(ink, 2.4f))
+    rect(13f, -14f, 19f, -8f, fill(ink), radius = 1f)
+    line(14.4f, -17f, 14.4f, -14f, stroke(ink, 1.4f)); line(17.6f, -17f, 17.6f, -14f, stroke(ink, 1.4f))
 }
