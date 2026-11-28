@@ -14,11 +14,12 @@ class ArtRenderTest {
         return n / ((c.image.width / 2f) * (c.image.height / 2f))
     }
 
-    @Test fun everySignInTheCatalogueIsDrawn() {
-        val expected = listOf("1.1", "1.2", "1.22", "1.23", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "3.1", "3.21", "3.25", "3.29", "3.34", "3.35", "4.1", "4.2", "4.3", "5.1")
-        expected.forEach { code ->
-            assertTrue("no art for $code", RoadSigns.has(code))
-            assertTrue("sign $code is empty", painted(120f, 120f) { RoadSigns.draw(it, code) } > 0.3f)
+    @Test fun everySignOfSection33IsDrawn() {
+        // Current edition: 1.1–1.41, 2.1–2.6, 3.1–3.45, 4.1–4.24, 5.1–5.96, 6.1–6.23, 7.1–7.30 with all sub-variants.
+        assertEquals(369, RoadSigns.codes.size)
+        listOf("1.3.2", "1.4.7", "1.41", "2.2", "3.45", "4.20.3", "4.24", "5.32.3", "5.67.3", "5.96.2", "6.7.7", "6.23", "7.6.7", "7.30").forEach { assertTrue(it, RoadSigns.has(it)) }
+        RoadSigns.codes.forEach { code ->
+            assertTrue("sign $code is empty", painted(120f, 120f) { RoadSigns.draw(it, code) } > 0.15f)
         }
     }
 

@@ -71,8 +71,8 @@ internal fun SignCardsScreen(group: String, startCode: String?, onBack: () -> Un
                     Text(sign.name, style = ZnakyType.title, color = c.textPrimary, textAlign = TextAlign.Center)
                     Text(sign.description, style = ZnakyType.callout, color = c.textSecondary, textAlign = TextAlign.Center)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Pill("п. ${sign.ruleRef} ПДР")
-                        Pill("Додаток 1")
+                        Pill("Розділ ${sign.ruleRef} ПДР")
+                        Pill(groupInfo?.name ?: "Знаки")
                     }
                 }
             }

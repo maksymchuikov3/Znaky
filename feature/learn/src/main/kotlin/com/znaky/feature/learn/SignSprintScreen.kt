@@ -63,9 +63,13 @@ private val Bad = Color(0xFFFF6B6B)
 private data class Round(val id: Int, val sign: RoadSignInfo, val options: List<String>)
 
 private fun newRound(id: Int, previous: String?): Round {
-    val pool = SignCatalog.signs.filter { it.code != previous }
+    // Groups 1–5 are the ones the exam asks about most; options come from the same group so
+    // the choice is about meaning, not about the sign's shape or colour.
+    val pool = SignCatalog.signs.filter { it.code != previous && it.group.toInt() <= 5 }
     val sign = pool[Random.nextInt(pool.size)]
-    val wrong = SignCatalog.signs.filter { it.code != sign.code }.shuffled().take(3).map { it.name }
+    val sameGroup = SignCatalog.inGroup(sign.group).map { it.name }.distinct().filter { it != sign.name }
+    val others = SignCatalog.signs.map { it.name }.distinct().filter { it != sign.name && it !in sameGroup }
+    val wrong = (sameGroup.shuffled() + others.shuffled()).take(3)
     return Round(id, sign, (wrong + sign.name).shuffled())
 }
 

@@ -138,7 +138,7 @@ fun ZnakyApp(appViewModel: AppViewModel = hiltViewModel()) {
                     HomeSection.LEARN -> navController.openTab(Tab.LEARN)
                     HomeSection.TRAINING -> navController.openTab(Tab.TRAINING)
                     HomeSection.SIGNS -> navController.navigate(SignsRoute)
-                    HomeSection.RULES -> navController.navigate(RulesRoute)
+                    HomeSection.RULES -> navController.navigate(RulesRoute())
                     HomeSection.MARKINGS -> navController.navigate(MarkingsRoute)
                     HomeSection.EXPLAIN -> navController.navigate(ExplainRoute)
                     HomeSection.CAR -> navController.navigate(CarHubRoute)
@@ -188,7 +188,11 @@ fun ZnakyApp(appViewModel: AppViewModel = hiltViewModel()) {
             statsScreen(onTrainTopic = { navController.navigateToTopic(it) })
             learnScreens(navController, onTrainTopic = { navController.navigateToTopic(it) })
             visualScreens(navController)
-            carScreens(navController, onTrainTopic = { navController.navigateToTopic(it) })
+            carScreens(
+                navController,
+                onTrainTopic = { navController.navigateToTopic(it) },
+                onOpenRules = { course -> navController.navigate(if (course == "boat") RulesRoute(book = "boat") else RulesRoute(moto = true)) },
+            )
         }
         AnimatedVisibility(currentTab != null, enter = fadeIn(), exit = fadeOut()) {
             TabBar(currentTab) { navController.openTab(it) }

@@ -17,7 +17,12 @@ import kotlinx.serialization.Serializable
 @Serializable data class CourseRoute(val id: String)
 @Serializable data class CourseLessonRoute(val courseId: String, val chapterId: String)
 
-fun NavGraphBuilder.carScreens(navController: NavController, onTrainTopic: (topicId: String) -> Unit) {
+fun NavGraphBuilder.carScreens(
+    navController: NavController,
+    onTrainTopic: (topicId: String) -> Unit,
+    /** Opens the full rules for a course: ПДР for «moto», the small-vessel rules for «boat». */
+    onOpenRules: (courseId: String) -> Unit,
+) {
     val back: () -> Unit = { navController.popBackStack() }
     composable<CarHubRoute> {
         CarHubScreen(
@@ -39,6 +44,7 @@ fun NavGraphBuilder.carScreens(navController: NavController, onTrainTopic: (topi
             onOpenChapter = { navController.navigate(CourseLessonRoute(id, it)) },
             onOpenAnatomy = { navController.navigate(AnatomyRoute(it)) },
             onTrain = onTrainTopic,
+            onOpenRules = { onOpenRules(id) },
         )
     }
     composable<CourseLessonRoute> { entry ->

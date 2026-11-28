@@ -9,8 +9,9 @@ import kotlinx.serialization.Serializable
 @Serializable data object SignsRoute
 @Serializable data class SignCardsRoute(val group: String, val startCode: String? = null)
 @Serializable data object SignSprintRoute
-@Serializable data object RulesRoute
-@Serializable data class RuleSectionRoute(val topicId: String)
+/** [book]: «pdr» or «boat» (see [PdrText]); [moto] marks the points about motorcycles. */
+@Serializable data class RulesRoute(val book: String = "pdr", val moto: Boolean = false)
+@Serializable data class RuleSectionRoute(val section: Int, val book: String = "pdr", val moto: Boolean = false)
 @Serializable data object MarkingsRoute
 
 fun NavGraphBuilder.learnScreens(
@@ -30,9 +31,21 @@ fun NavGraphBuilder.learnScreens(
         SignCardsScreen(route.group, route.startCode, onBack = back)
     }
     composable<SignSprintRoute> { SignSprintScreen(onBack = back) }
-    composable<RulesRoute> { RulesScreen(onBack = back, onOpen = { navController.navigate(RuleSectionRoute(it)) }) }
+    composable<RulesRoute> { entry ->
+        val r = entry.toRoute<RulesRoute>()
+        RulesScreen(r.book, r.moto, onBack = back, onOpen = { navController.navigate(RuleSectionRoute(it, r.book, r.moto)) })
+    }
     composable<RuleSectionRoute> { entry ->
-        RuleSectionScreen(entry.toRoute<RuleSectionRoute>().topicId, onBack = back, onTrain = onTrainTopic)
+        val r = entry.toRoute<RuleSectionRoute>()
+        RuleSectionScreen(
+            r.section,
+            r.book,
+            r.moto,
+            onBack = back,
+            onTrain = onTrainTopic,
+            onOpenSign = { group, code -> navController.navigate(SignCardsRoute(group, code)) },
+            onOpenMarkings = { navController.navigate(MarkingsRoute) },
+        )
     }
     composable<MarkingsRoute> { MarkingsScreen(onBack = back) }
 }
