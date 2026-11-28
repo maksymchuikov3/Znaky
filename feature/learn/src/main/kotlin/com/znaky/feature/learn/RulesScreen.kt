@@ -115,7 +115,7 @@ internal fun RulesScreen(
             }
         }
         item(key = "list") {
-            GroupedList(Modifier.padding(horizontal = 16.dp), header = "Розділи 1–${pdr.sections.size}") {
+            GroupedList(Modifier.padding(horizontal = 16.dp), header = "Розділи ${pdr.sectionNumber(1)}–${pdr.sectionNumber(pdr.sections.size)}") {
                 pdr.sections.forEachIndexed { i, s ->
                     ListRow(
                         title = s.title,
@@ -125,7 +125,7 @@ internal fun RulesScreen(
                         },
                         showDivider = i > 0,
                         onClick = { onOpen(s.n) },
-                        leading = { NumberBadge(s.n.toString()) },
+                        leading = { NumberBadge(pdr.sectionNumber(s.n)) },
                     )
                 }
             }
@@ -163,7 +163,7 @@ internal fun RuleSectionScreen(
         contentPadding = PaddingValues(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        item(key = "top") { TopBar(onBack = onBack, backLabel = "Розділ ${s.n}") }
+        item(key = "top") { TopBar(onBack = onBack, backLabel = "Розділ ${book?.sectionNumber(s.n)}") }
         item(key = "title") { LargeTitle(s.title, subtitle = "${pointsLabel(s)} · ${s.readMinutes} хв читання") }
         if (s.n == 12 && bookKey == PdrText.PDR) item(key = "speed") { SpeedLimits() }
         if (s.intro.isNotEmpty()) item(key = "intro") { Blocks(s.intro, Modifier.padding(horizontal = 20.dp)) }
@@ -203,6 +203,7 @@ internal fun RuleSectionScreen(
 
 private fun pointsLabel(s: PdrSection): String {
     val n = s.pointCount
+    if (n == 0) return "Без пунктів, лише пояснення"
     val word = when {
         s.n == 33 -> "знаків і табличок"
         s.n == 34 -> "ліній розмітки"

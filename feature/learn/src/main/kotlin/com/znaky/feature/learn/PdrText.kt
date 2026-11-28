@@ -19,8 +19,18 @@ internal data class PdrBook(
     val source: String,
     val sourceUrl: String,
     val edition: String,
+    /** Sections are numbered I, II, III … in the official text. */
+    val romanSections: Boolean = false,
     val sections: List<PdrSection>,
-)
+) {
+    fun sectionNumber(n: Int): String = if (romanSections) roman(n) else n.toString()
+}
+
+private fun roman(n: Int): String {
+    val values = listOf(10 to "X", 9 to "IX", 5 to "V", 4 to "IV", 1 to "I")
+    var rest = n
+    return buildString { values.forEach { (v, s) -> while (rest >= v) { append(s); rest -= v } } }
+}
 
 @Serializable
 internal data class PdrSection(
@@ -34,7 +44,7 @@ internal data class PdrSection(
     val pointCount: Int get() = points.count { !it.note }
 
     /** Rough reading time at ~900 characters a minute. */
-    val readMinutes: Int get() = (points.sumOf { p -> p.blocks.sumOf { it.length } } / 900).coerceAtLeast(1)
+    val readMinutes: Int get() = ((intro.sumOf { it.length } + points.sumOf { p -> p.blocks.sumOf { it.length } }) / 900).coerceAtLeast(1)
 }
 
 @Serializable
