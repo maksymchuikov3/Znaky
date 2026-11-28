@@ -199,6 +199,10 @@ def to_blocks(paras):
     return out
 
 
+# Points that name motorcycles or mopeds — highlighted in the motorcyclist's view of the rules.
+MOTO_RE = re.compile(r"мотоцикл|мопед|мотоколяс|мото|шолом|двоколісн|квадроцикл", re.I)
+
+
 def finish(sections):
     for s in sections:
         for key in ("intro", "footnote"):
@@ -206,6 +210,9 @@ def finish(sections):
                 s[key] = to_blocks(s[key])
         for p in s["points"]:
             p["blocks"] = to_blocks(p.pop("paras"))
+            text = " ".join(b.get("text", "") + " ".join(" ".join(r) for r in b.get("rows", [])) for b in p["blocks"])
+            if not p.get("note") and MOTO_RE.search(text):
+                p["moto"] = True
             if "headingIntro" in p:
                 p["headingIntro"] = to_blocks(p["headingIntro"])
     return sections

@@ -63,8 +63,12 @@ internal class RulesViewModel @Inject constructor(
     @ApplicationContext context: Context,
     questions: QuestionRepository,
 ) : ViewModel() {
-    val book: StateFlow<PdrBook?> = flow { emit(PdrText.load(context)) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    private val appContext = context
+    private val books = mutableMapOf<String, StateFlow<PdrBook?>>()
+
+    fun book(key: String): StateFlow<PdrBook?> = books.getOrPut(key) {
+        flow { emit(PdrText.load(appContext, key)) }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    }
 
     /** Question topics by ПДР section number, for the «питання з розділу» button. */
     val topics: StateFlow<Map<String, Topic>> = questions.observeTopics()
@@ -73,9 +77,16 @@ internal class RulesViewModel @Inject constructor(
 }
 
 @Composable
-internal fun RulesScreen(onBack: () -> Unit, onOpen: (Int) -> Unit, viewModel: RulesViewModel = hiltViewModel()) {
-    val book by viewModel.book.collectAsStateWithLifecycle()
+internal fun RulesScreen(
+    bookKey: String,
+    moto: Boolean,
+    onBack: () -> Unit,
+    onOpen: (Int) -> Unit,
+    viewModel: RulesViewModel = hiltViewModel(),
+) {
+    val book by viewModel.book(bookKey).collectAsStateWithLifecycle()
     val pdr = book ?: return LoadingBox()
+    val motoPoints = if (moto) pdr.sections.flatMap { s -> s.points.filter { it.moto }.map { s to it } } else emptyList()
     val c = ZnakyTheme.colors
     LazyColumn(
         Modifier.fillMaxSize().background(c.background).statusBarsPadding(),
@@ -83,13 +94,35 @@ internal fun RulesScreen(onBack: () -> Unit, onOpen: (Int) -> Unit, viewModel: R
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item(key = "top") { TopBar(onBack = onBack) }
-        item(key = "title") { LargeTitle("Правила дорожнього руху", subtitle = "Повний текст ПДР по розділах і пунктах") }
+        item(key = "title") {
+            if (moto) {
+                LargeTitle("ПДР для мотоцикліста", subtitle = "Ті самі правила, що й для авто. Пункти, де окремо сказано про мотоцикли й мопеди, позначені «Мото».")
+            } else {
+                LargeTitle(pdr.title, subtitle = pdr.subtitle)
+            }
+        }
+        if (motoPoints.isNotEmpty()) item(key = "moto") {
+            GroupedList(Modifier.padding(horizontal = 16.dp), header = "Окремо про мотоцикли й мопеди · ${motoPoints.size}") {
+                motoPoints.forEachIndexed { i, (s, p) ->
+                    ListRow(
+                        title = if (s.n == 33) "Знак ${p.label}" else "Пункт ${p.label}",
+                        subtitle = p.blocks.firstOrNull()?.text?.take(90)?.let { if (it.length == 90) "$it…" else it },
+                        showDivider = i > 0,
+                        onClick = { onOpen(s.n) },
+                        leading = { MotoBadge() },
+                    )
+                }
+            }
+        }
         item(key = "list") {
             GroupedList(Modifier.padding(horizontal = 16.dp), header = "Розділи 1–${pdr.sections.size}") {
                 pdr.sections.forEachIndexed { i, s ->
                     ListRow(
                         title = s.title,
-                        subtitle = "${pointsLabel(s)} · ${s.readMinutes} хв читання",
+                        subtitle = buildString {
+                            append("${pointsLabel(s)} · ${s.readMinutes} хв читання")
+                            if (moto) s.points.count { it.moto }.takeIf { it > 0 }?.let { append(" · $it про мото") }
+                        },
                         showDivider = i > 0,
                         onClick = { onOpen(s.n) },
                         leading = { NumberBadge(s.n.toString()) },
@@ -111,16 +144,19 @@ internal fun RulesScreen(onBack: () -> Unit, onOpen: (Int) -> Unit, viewModel: R
 @Composable
 internal fun RuleSectionScreen(
     section: Int,
+    bookKey: String,
+    moto: Boolean,
     onBack: () -> Unit,
     onTrain: (String) -> Unit,
     onOpenSign: (group: String, code: String) -> Unit,
     onOpenMarkings: () -> Unit,
     viewModel: RulesViewModel = hiltViewModel(),
 ) {
-    val book by viewModel.book.collectAsStateWithLifecycle()
+    val book by viewModel.book(bookKey).collectAsStateWithLifecycle()
     val topics by viewModel.topics.collectAsStateWithLifecycle()
     val s = book?.sections?.firstOrNull { it.n == section } ?: return LoadingBox()
-    val topic = topics[s.n.toString()]
+    // ПДР sections map to question topics by number; other books have no question bank of their own here.
+    val topic = if (bookKey == PdrText.PDR) topics[s.n.toString()] else null
     val c = ZnakyTheme.colors
     LazyColumn(
         Modifier.fillMaxSize().background(c.background).statusBarsPadding(),
@@ -129,7 +165,7 @@ internal fun RuleSectionScreen(
     ) {
         item(key = "top") { TopBar(onBack = onBack, backLabel = "Розділ ${s.n}") }
         item(key = "title") { LargeTitle(s.title, subtitle = "${pointsLabel(s)} · ${s.readMinutes} хв читання") }
-        if (s.n == 12) item(key = "speed") { SpeedLimits() }
+        if (s.n == 12 && bookKey == PdrText.PDR) item(key = "speed") { SpeedLimits() }
         if (s.intro.isNotEmpty()) item(key = "intro") { Blocks(s.intro, Modifier.padding(horizontal = 20.dp)) }
         s.points.forEachIndexed { i, p ->
             if (p.heading != null) {
@@ -141,13 +177,13 @@ internal fun RuleSectionScreen(
                 }
             }
             item(key = "p$i") {
-                when (s.n) {
+                when (if (bookKey == PdrText.PDR) s.n else 0) {
                     33 -> {
                         val signs = p.linkedSigns()
-                        PointCard(p, signs = signs, onClick = signs.firstOrNull()?.let { first -> { onOpenSign(first.group, first.code) } })
+                        PointCard(p, signs = signs, moto = moto, onClick = signs.firstOrNull()?.let { first -> { onOpenSign(first.group, first.code) } })
                     }
-                    34 -> PointCard(p, onClick = if (p.note) null else onOpenMarkings)
-                    else -> PointCard(p)
+                    34 -> PointCard(p, moto = moto, onClick = if (p.note) null else onOpenMarkings)
+                    else -> PointCard(p, moto = moto)
                 }
             }
         }
@@ -178,6 +214,17 @@ private fun pointsLabel(s: PdrSection): String {
 }
 
 @Composable
+private fun MotoBadge() {
+    val c = ZnakyTheme.colors
+    Text(
+        "Мото",
+        style = ZnakyType.caption,
+        color = c.onAccentTint,
+        modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(c.accentTint).padding(horizontal = 8.dp, vertical = 3.dp),
+    )
+}
+
+@Composable
 private fun NumberBadge(text: String) {
     val c = ZnakyTheme.colors
     Box(Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(c.tealTint), contentAlignment = Alignment.Center) {
@@ -186,7 +233,7 @@ private fun NumberBadge(text: String) {
 }
 
 @Composable
-private fun PointCard(p: PdrPoint, signs: List<RoadSignInfo> = emptyList(), onClick: (() -> Unit)? = null) {
+private fun PointCard(p: PdrPoint, signs: List<RoadSignInfo> = emptyList(), moto: Boolean = false, onClick: (() -> Unit)? = null) {
     val c = ZnakyTheme.colors
     ZCard(Modifier.fillMaxWidth().padding(horizontal = 16.dp), radius = 18.dp, onClick = onClick) {
         if (signs.isNotEmpty()) {
@@ -198,12 +245,15 @@ private fun PointCard(p: PdrPoint, signs: List<RoadSignInfo> = emptyList(), onCl
             }
         }
         if (!p.note) {
-            Text(
-                p.label,
-                style = ZnakyType.caption,
-                color = if (p.excluded) c.textTertiary else c.teal,
-                modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(c.tealTint).padding(horizontal = 8.dp, vertical = 3.dp),
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    p.label,
+                    style = ZnakyType.caption,
+                    color = if (p.excluded) c.textTertiary else c.teal,
+                    modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(c.tealTint).padding(horizontal = 8.dp, vertical = 3.dp),
+                )
+                if (moto && p.moto) MotoBadge()
+            }
             Spacer(Modifier.height(8.dp))
         }
         Blocks(p.blocks, dim = p.excluded)

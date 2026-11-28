@@ -13,6 +13,9 @@ import kotlinx.serialization.json.Json
 
 @Serializable
 internal data class PdrBook(
+    /** Shown as the screen title; the ПДР file leaves it out. */
+    val title: String = "Правила дорожнього руху",
+    val subtitle: String = "Повний текст ПДР по розділах і пунктах",
     val source: String,
     val sourceUrl: String,
     val edition: String,
@@ -47,6 +50,8 @@ internal data class PdrPoint(
     val note: Boolean = false,
     /** The rules mark this point as deleted («виключено»). */
     val excluded: Boolean = false,
+    /** The point names motorcycles or mopeds: highlighted in the motorcyclist's view. */
+    val moto: Boolean = false,
     val blocks: List<PdrBlock>,
 ) {
     val label: String get() = codes ?: n
@@ -64,13 +69,17 @@ internal data class PdrBlock(
 }
 
 internal object PdrText {
+    /** Book keys: «pdr» — ПДР (assets/pdr/pdr.json), «boat» — rules for small vessels (assets/pdr/boat.json). */
+    const val PDR = "pdr"
+    const val BOAT = "boat"
+
     private val json = Json { ignoreUnknownKeys = true }
 
-    @Volatile private var cached: PdrBook? = null
+    private val cache = java.util.concurrent.ConcurrentHashMap<String, PdrBook>()
 
-    suspend fun load(context: Context): PdrBook = cached ?: withContext(Dispatchers.IO) {
-        context.assets.open("pdr/pdr.json").bufferedReader().use { json.decodeFromString(PdrBook.serializer(), it.readText()) }
-            .also { cached = it }
+    suspend fun load(context: Context, key: String = PDR): PdrBook = cache[key] ?: withContext(Dispatchers.IO) {
+        context.assets.open("pdr/$key.json").bufferedReader().use { json.decodeFromString(PdrBook.serializer(), it.readText()) }
+            .also { cache[key] = it }
     }
 }
 

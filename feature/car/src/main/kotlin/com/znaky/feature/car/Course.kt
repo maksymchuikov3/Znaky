@@ -93,6 +93,8 @@ import androidx.lifecycle.viewModelScope
 import com.znaky.core.art.CourseScenes
 import com.znaky.core.designsystem.art.drawArt
 import com.znaky.core.designsystem.art.rememberArtCanvas
+import com.znaky.core.designsystem.component.ListRow
+import com.znaky.core.designsystem.component.GroupedList
 import com.znaky.core.designsystem.component.ButtonKind
 import com.znaky.core.designsystem.component.LinearBar
 import com.znaky.core.designsystem.component.LoadingBox
@@ -207,6 +209,7 @@ internal fun CourseScreen(
     onOpenChapter: (chapterId: String) -> Unit,
     onOpenAnatomy: (kind: String) -> Unit,
     onTrain: (topicId: String) -> Unit,
+    onOpenRules: () -> Unit,
     viewModel: CourseViewModel = hiltViewModel(),
 ) {
     val course = rememberCourse(courseId) ?: return LoadingBox()
@@ -252,6 +255,19 @@ internal fun CourseScreen(
                         onTrain = { ch.topicId?.let(onTrain) },
                     )
                 }
+            }
+        }
+        item(key = "rules") {
+            GroupedList(Modifier.padding(horizontal = 16.dp), header = "Повний текст правил") {
+                ListRow(
+                    title = if (course.id == "boat") "Правила плавання малих суден" else "ПДР для мотоцикліста",
+                    subtitle = if (course.id == "boat") {
+                        "Офіційний текст по розділах і пунктах"
+                    } else {
+                        "Усі 34 розділи, пункти про мотоцикли й мопеди позначені"
+                    },
+                    onClick = onOpenRules,
+                )
             }
         }
         if (course.examNote.isNotEmpty()) {
